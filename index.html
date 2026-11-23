@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Universal - GPS Real en Tiempo Real</title>
+    <title>OmniLocal Universal - 100% Real y Rutas por Calle</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -24,20 +24,6 @@
         .btn-small { background: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
         .btn-live-active { background: #188038; color: white; }
-
-        .https-warning {
-            display: none; background: #fef7e0; color: #b06000; border: 1px solid #fbbc04;
-            padding: 10px 14px; border-radius: 10px; font-size: 12.5px; margin-bottom: 12px; line-height: 1.45;
-        }
-
-        .manual-panel {
-            display: none; background: white; padding: 14px; border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 12px; border: 1px solid #dadce0;
-        }
-        .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        @media (max-width: 500px) { .manual-grid { grid-template-columns: 1fr; } }
-        .manual-panel input { width: 100%; padding: 9px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; outline: none; }
-        .manual-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 
         .search-box {
             display: flex; gap: 6px; background: white; padding: 6px; border-radius: 30px;
@@ -134,7 +120,7 @@
         }
         .user-gps-dot {
             background: #1a73e8; width: 20px; height: 20px; border-radius: 50%;
-            border: 3px solid white; animation: pulseGPS 1.8s infinite; cursor: grab;
+            border: 3px solid white; animation: pulseGPS 1.8s infinite; pointer-events: none;
         }
     </style>
 </head>
@@ -143,36 +129,14 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">GPS Real en Tiempo Real • Lugares 100% reales que sí venden exactamente lo que buscas</div>
+        <div class="subtitle">100% GPS Satelital en Vivo • Solo comercios registrados en mapa real con distancia exacta por calle</div>
     </header>
 
-    <div class="https-warning" id="httpsWarning"></div>
-
     <div class="gps-bar">
-        <span id="gpsText">🛰️ Activando antena GPS real...</span>
+        <span id="gpsText">🛰️ Activando antena GPS satelital...</span>
         <div class="gps-actions">
             <button class="btn-small btn-outline" onclick="centrarYSeguir()">🎯 Centrar en mí</button>
-            <button class="btn-small btn-outline" onclick="togglePanelManual()">✏️ Escribir calle</button>
-            <button class="btn-small btn-live-active" id="btnGpsLive" onclick="reiniciarGPSVivo()">🛰️ GPS en vivo</button>
-        </div>
-    </div>
-
-    <div class="manual-panel" id="manualPanel">
-        <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:#202124;">
-            Escribe tu calle o colonia (o toca/arrastra tu punto azul en el mapa):
-        </div>
-        <div class="manual-grid">
-            <input type="text" id="locVilla" placeholder="Calle o Colonia">
-            <input type="text" id="locCiudad" placeholder="Ciudad o Municipio">
-            <input type="text" id="locEstado" placeholder="Estado">
-            <input type="text" id="locCP" placeholder="Código Postal">
-        </div>
-        <div class="manual-footer">
-            <button class="btn-small btn-outline" onclick="volverAGPSReal()" style="color:#188038; border-color:#188038;">🛰️ Volver a antena GPS</button>
-            <div style="display:flex; gap:6px;">
-                <button class="btn-small btn-outline" onclick="togglePanelManual()">Cerrar</button>
-                <button class="btn-small" onclick="guardarUbicacionFija()">Ubicar dirección</button>
-            </div>
+            <button class="btn-small btn-live-active" id="btnGpsLive" onclick="reiniciarGPSVivo()">🛰️ Actualizar GPS</button>
         </div>
     </div>
 
@@ -193,30 +157,26 @@
 
     <div id="mapContainer"></div>
 
-    <div id="loader" class="loader">⚡ Buscando comercios 100% reales cerca de tu posición GPS... (<span id="timerSec">0</span>s)</div>
+    <div id="loader" class="loader">⚡ Escaneando comercios reales en el mapa y calculando rutas por calle... (<span id="timerSec">0</span>s)</div>
     <div id="results"></div>
 </div>
 
 <script>
-    const MANUAL_STORAGE_KEY = "omnilocal_manual_strict_v1";
-
-    // No arranca en ninguna coordenada fija: espera la lectura real de tu antena GPS
     let userLat = null;
     let userLon = null;
     let userAcc = null;
-    let origenPosicion = ""; // "satelite" o "manual"
     let estadoActual = "Querétaro";
     let calleActualTexto = "";
     let ultimaReverseLat = 0;
     let ultimaReverseLon = 0;
 
-    let modoManual = false;
     let seguirCamara = true;
     let watchId = null;
     let mapa = null;
     let marcadorUsuario = null;
     let circuloPrecision = null;
     let capaTiendas = null;
+    let capaRuta = null;
     let marcadoresPorId = {};
     let ultimaListaMostrada = [];
 
@@ -296,127 +256,16 @@
         ]
     };
 
-    const COMERCIOS_REALES_VERIFICADOS = [
-        // --- HAMBURGUESERÍAS REALES ---
-        { nombre: "McDonald's Paseo Constituyentes (El Pueblito)", giros: ["hamburguesas"], tipoLabel: "Restaurante de Hamburguesas", dir: "Av. Paseo Constituyentes, El Pueblito, Corregidora", lat: 20.54645, lon: -100.43510, nivelPrecio: 1.00 },
-        { nombre: "Burger King Paseo Constituyentes", giros: ["hamburguesas"], tipoLabel: "Restaurante de Hamburguesas", dir: "Av. Paseo Constituyentes #1650, Corregidora", lat: 20.54730, lon: -100.43350, nivelPrecio: 1.02 },
-        { nombre: "Hamburguesas El Pueblito (Centro)", giros: ["hamburguesas"], tipoLabel: "Hamburguesería Local", dir: "Josefa Ortiz de Domínguez, El Pueblito, Corregidora", lat: 20.54180, lon: -100.44220, nivelPrecio: 0.85 },
-        { nombre: "Carl's Jr. Constituyentes", giros: ["hamburguesas"], tipoLabel: "Restaurante de Hamburguesas", dir: "Av. Constituyentes Pte, Querétaro", lat: 20.57680, lon: -100.41250, nivelPrecio: 1.18 },
-        { nombre: "Johnny Rockets Galerías Querétaro", giros: ["hamburguesas"], tipoLabel: "Restaurante de Hamburguesas", dir: "Av. 5 de Febrero #99, Querétaro", lat: 20.58575, lon: -100.41140, nivelPrecio: 1.35 },
-
-        // --- PIZZERÍAS REALES ---
-        { nombre: "Little Caesars Pizza El Pueblito", giros: ["pizza"], tipoLabel: "Pizzería", dir: "Av. Paseo Constituyentes, El Pueblito, Corregidora", lat: 20.54480, lon: -100.43840, nivelPrecio: 0.85 },
-        { nombre: "Domino's Pizza El Pueblito", giros: ["pizza"], tipoLabel: "Pizzería", dir: "Av. Paseo Constituyentes, Corregidora", lat: 20.54710, lon: -100.43390, nivelPrecio: 1.05 },
-        { nombre: "Pizza Hut Constituyentes", giros: ["pizza"], tipoLabel: "Pizzería", dir: "Av. Paseo Constituyentes #1210, Corregidora", lat: 20.55320, lon: -100.42290, nivelPrecio: 1.10 },
-
-        // --- TAQUERÍAS REALES ---
-        { nombre: "Taquería Chilango", giros: ["tacos"], tipoLabel: "Taquería", dir: "Av. Prol. El Jacal, El Pueblito, Corregidora", lat: 20.53560, lon: -100.44490, nivelPrecio: 0.98 },
-        { nombre: "Taquería Puerta Real", giros: ["tacos"], tipoLabel: "Taquería", dir: "Av. Prol. El Jacal esq. Av. Puerta Real, Corregidora", lat: 20.53052, lon: -100.44958, nivelPrecio: 0.95 },
-        { nombre: "Tacos El Paisa", giros: ["tacos"], tipoLabel: "Taquería", dir: "Prol. El Jacal, Corregidora", lat: 20.53110, lon: -100.44875, nivelPrecio: 0.90 },
-        { nombre: "Taquería \"Shau\"", giros: ["tacos"], tipoLabel: "Taquería", dir: "Av. Puerta Real Sur, Corregidora", lat: 20.52995, lon: -100.45175, nivelPrecio: 0.92 },
-
-        // --- ELOTERÍAS REALES ---
-        { nombre: "Elotes y Esquites RR (El Pueblito)", giros: ["elotes"], tipoLabel: "Elotería / Antojitos", dir: "Josefa Ortiz de Domínguez esq. H. Colegio Militar, El Pueblito", lat: 20.54135, lon: -100.44265, nivelPrecio: 0.92 },
-        { nombre: "Elotes El Jacal", giros: ["elotes"], tipoLabel: "Elotería / Antojitos", dir: "Prol. El Jacal, Corregidora", lat: 20.53425, lon: -100.44585, nivelPrecio: 0.90 },
-        { nombre: "Elotes y Esquites Puerta Real", giros: ["elotes"], tipoLabel: "Elotería / Antojitos", dir: "Av. Puerta Real esq. Prol. El Jacal, Corregidora", lat: 20.53068, lon: -100.44965, nivelPrecio: 0.95 },
-        { nombre: "Mr Elote Mix", giros: ["elotes"], tipoLabel: "Elotería / Antojitos", dir: "C. Corregidora 58, Centro Histórico, Querétaro", lat: 20.59195, lon: -100.39115, nivelPrecio: 1.22 },
-        { nombre: "Elote Panzón", giros: ["elotes"], tipoLabel: "Elotería / Antojitos", dir: "Av. Universidad Oriente #175, Querétaro", lat: 20.59470, lon: -100.38210, nivelPrecio: 1.15 },
-
-        // --- SUSHI REAL ---
-        { nombre: "Sushi Itto Plaza Citadina", giros: ["sushi"], tipoLabel: "Restaurante de Sushi", dir: "Plaza Citadina, Paseo Constituyentes, Corregidora", lat: 20.54790, lon: -100.43260, nivelPrecio: 1.15 },
-        { nombre: "Roll Factory Candiles", giros: ["sushi"], tipoLabel: "Restaurante de Sushi", dir: "Av. Candiles, Corregidora", lat: 20.54890, lon: -100.41820, nivelPrecio: 0.95 },
-
-        // --- POLLO REAL ---
-        { nombre: "Pollo Feliz El Pueblito", giros: ["pollo"], tipoLabel: "Pollo Asado al Carbón", dir: "Av. Paseo Constituyentes, El Pueblito, Corregidora", lat: 20.54440, lon: -100.43900, nivelPrecio: 0.95 },
-        { nombre: "KFC Paseo Constituyentes", giros: ["pollo"], tipoLabel: "Restaurante de Pollo Frito", dir: "Av. Paseo Constituyentes, Corregidora", lat: 20.54745, lon: -100.43330, nivelPrecio: 1.00 },
-
-        // --- CAFÉ Y PAN REAL ---
-        { nombre: "Pastelería La Era El Pueblito", giros: ["cafe"], tipoLabel: "Panadería y Pastelería", dir: "Av. Paseo Constituyentes, El Pueblito", lat: 20.54410, lon: -100.43940, nivelPrecio: 0.95 },
-        { nombre: "Starbucks Plaza Citadina", giros: ["cafe"], tipoLabel: "Cafetería", dir: "Plaza Citadina, Paseo Constituyentes, Corregidora", lat: 20.54805, lon: -100.43240, nivelPrecio: 1.15 },
-
-        // --- FARMACIAS REALES ---
-        { nombre: "Farmacia del Ahorro El Pueblito", giros: ["farmacia"], tipoLabel: "Farmacia", dir: "Av. Paseo Constituyentes, El Pueblito", lat: 20.54430, lon: -100.43910, nivelPrecio: 0.98 },
-        { nombre: "Farmacias Similares El Jacal", giros: ["farmacia"], tipoLabel: "Farmacia", dir: "Prol. El Jacal, Corregidora", lat: 20.53390, lon: -100.44615, nivelPrecio: 0.85 },
-        { nombre: "Farmacia Guadalajara Puerta Real", giros: ["farmacia", "supermercado"], tipoLabel: "Farmacia / Autoservicio", dir: "Acceso Puerta Real, Corregidora", lat: 20.53085, lon: -100.44975, nivelPrecio: 0.95 },
-        { nombre: "Farmacia Benavides Candiles", giros: ["farmacia"], tipoLabel: "Farmacia", dir: "Av. Candiles, Corregidora", lat: 20.54845, lon: -100.41865, nivelPrecio: 1.00 },
-
-        // --- SUPERMERCADOS Y DEPARTAMENTALES REALES ---
-        { nombre: "Bodega Aurrera El Pueblito", giros: ["supermercado", "mascotas", "hogar", "electronica"], tipoLabel: "Supermercado", dir: "Prol. Zaragoza / Paseo Constituyentes, El Pueblito", lat: 20.54415, lon: -100.43930, nivelPrecio: 0.93 },
-        { nombre: "Coppel El Pueblito", giros: ["electronica", "hogar", "departamental"], tipoLabel: "Tienda Departamental", dir: "Paseo Constituyentes, El Pueblito, Corregidora", lat: 20.54465, lon: -100.43885, nivelPrecio: 1.02 },
-        { nombre: "Walmart Express El Pueblito", giros: ["supermercado", "mascotas", "electronica", "hogar"], tipoLabel: "Supermercado", dir: "Av. Paseo Constituyentes, El Pueblito, Corregidora", lat: 20.54695, lon: -100.43420, nivelPrecio: 1.00 },
-        { nombre: "Walmart Supercenter Plaza Citadina", giros: ["supermercado", "mascotas", "electronica", "hogar", "ferreteria"], tipoLabel: "Hipermercado", dir: "Paseo Constituyentes #1690, Corregidora", lat: 20.54785, lon: -100.43265, nivelPrecio: 0.98 },
-        { nombre: "Chedraui Selecto Centro Sur", giros: ["supermercado", "mascotas", "electronica", "hogar"], tipoLabel: "Supermercado", dir: "Blvd. Bernardo Quintana Sur, Querétaro", lat: 20.56320, lon: -100.37120, nivelPrecio: 1.01 },
-
-        // --- TIENDAS DE MASCOTAS Y VETERINARIAS REALES ---
-        { nombre: "Hospital Veterinario El Pueblito", giros: ["mascotas"], tipoLabel: "Veterinaria / Alimento Mascotas", dir: "Av. Paseo Constituyentes, El Pueblito", lat: 20.54350, lon: -100.44010, nivelPrecio: 0.96 },
-        { nombre: "Petco Plaza Citadina Corregidora", giros: ["mascotas"], tipoLabel: "Tienda de Mascotas / Veterinaria", dir: "Plaza Citadina, Paseo Constituyentes, Corregidora", lat: 20.54810, lon: -100.43220, nivelPrecio: 1.02 },
-        { nombre: "+Kota Plaza Citadina", giros: ["mascotas"], tipoLabel: "Tienda de Mascotas", dir: "Plaza Citadina, Paseo Constituyentes, Corregidora", lat: 20.54770, lon: -100.43290, nivelPrecio: 1.04 },
-
-        // --- ELECTRÓNICA Y CELULARES REALES ---
-        { nombre: "MacStore Plaza Citadina", giros: ["electronica"], tipoLabel: "Distribuidor Autorizado Apple", dir: "Plaza Citadina, Paseo Constituyentes, Corregidora", lat: 20.54795, lon: -100.43250, nivelPrecio: 1.00 },
-        { nombre: "Centro de Atención a Clientes Telcel Citadina", giros: ["electronica"], tipoLabel: "Telefonía y Celulares", dir: "Plaza Citadina, Paseo Constituyentes, Corregidora", lat: 20.54760, lon: -100.43280, nivelPrecio: 1.00 },
-        { nombre: "iShop Mixup Galerías Querétaro", giros: ["electronica"], tipoLabel: "Distribuidor Autorizado Apple", dir: "Av. 5 de Febrero #99, Querétaro", lat: 20.58585, lon: -100.41125, nivelPrecio: 1.00 },
-
-        // --- FERRETERÍAS REALES ---
-        { nombre: "The Home Depot Corregidora", giros: ["ferreteria", "hogar"], tipoLabel: "Ferretería y Mejoras del Hogar", dir: "Paseo Constituyentes #1200, Corregidora", lat: 20.55365, lon: -100.42235, nivelPrecio: 1.00 },
-        { nombre: "Sodimac Homecenter Querétaro", giros: ["ferreteria", "hogar"], tipoLabel: "Ferretería y Hogar", dir: "Av. 5 de Febrero #1300, Querétaro", lat: 20.60120, lon: -100.41890, nivelPrecio: 0.99 },
-
-        // --- MUEBLERÍAS REALES ---
-        { nombre: "Office Depot Constituyentes", giros: ["hogar", "electronica"], tipoLabel: "Muebles de Oficina y Cómputo", dir: "Av. Constituyentes Pte, Querétaro", lat: 20.57925, lon: -100.40915, nivelPrecio: 1.01 },
-        { nombre: "Liverpool Galerías Querétaro", giros: ["hogar", "electronica", "departamental"], tipoLabel: "Tienda Departamental y Mueblería", dir: "Av. 5 de Febrero #99, Querétaro", lat: 20.58585, lon: -100.41125, nivelPrecio: 1.12 },
-        { nombre: "Dico Mueblerías Constituyentes", giros: ["hogar"], tipoLabel: "Mueblería", dir: "Av. Constituyentes Pte #210, Querétaro", lat: 20.58110, lon: -100.40650, nivelPrecio: 0.97 }
-    ];
-
-    function verificarContextoSeguro() {
-        const aviso = document.getElementById("httpsWarning");
-        if (!window.isSecureContext && location.protocol !== "http:" && location.hostname !== "localhost") {
-            aviso.style.display = "block";
-            aviso.innerHTML = `⚠️ <b>Por qué tu visor no activa el chip GPS:</b> Estás abriendo el archivo en modo local/embebido (<code>${location.protocol}</code>). Por seguridad de Apple/Google, el chip GPS real solo se enciende cuando abres el HTML desde un enlace <b>https://</b> (por ejemplo en GitHub Pages, Netlify o Safari/Chrome en servidor) y con <b>Ubicación precisa</b> activa.`;
-        }
-    }
-
-    function fijarPuntoManualEnMapa(lat, lon) {
-        modoManual = true;
-        origenPosicion = "manual";
-        userLat = lat;
-        userLon = lon;
-        userAcc = null;
-        calleActualTexto = "";
-        ultimaReverseLat = 0;
-
-        if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-        }
-        document.getElementById("btnGpsLive").classList.remove("btn-live-active");
-
-        localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify({
-            lat: userLat,
-            lon: userLon,
-            estado: estadoActual,
-            etiqueta: `${userLat.toFixed(5)}, ${userLon.toFixed(5)}`
-        }));
-
-        document.getElementById("gpsText").innerHTML = `📌 <b>Punto fijado:</b> ${userLat.toFixed(5)}, ${userLon.toFixed(5)}`;
-        actualizarMarcadorYDistancias();
-        actualizarNombreCalleEnVivo(userLat, userLon);
-    }
-
     function iniciarMapa() {
-        // Inicia sin pin fijo hasta que responda el GPS real o toques el mapa
         mapa = L.map('mapContainer').setView([20.56, -100.41], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
         }).addTo(mapa);
         capaTiendas = L.layerGroup().addTo(mapa);
+        capaRuta = L.layerGroup().addTo(mapa);
 
         mapa.on('dragstart', () => {
             seguirCamara = false;
-        });
-
-        mapa.on('click', (e) => {
-            seguirCamara = false;
-            fijarPuntoManualEnMapa(e.latlng.lat, e.latlng.lng);
         });
     }
 
@@ -424,7 +273,6 @@
         seguirCamara = true;
         if (userLat !== null && userLon !== null && mapa) {
             mapa.setView([userLat, userLon], 17, { animate: true });
-            if (marcadorUsuario) marcadorUsuario.openPopup();
         } else {
             reiniciarGPSVivo();
         }
@@ -440,53 +288,36 @@
             });
             marcadorUsuario = L.marker([userLat, userLon], {
                 icon: iconoAzul,
-                draggable: true,
+                draggable: false,
+                interactive: false,
                 zIndexOffset: 1000
-            })
-                .addTo(mapa)
-                .bindPopup("<b>🔵 Tu ubicación GPS real</b>");
-
-            marcadorUsuario.on('dragend', (e) => {
-                const pos = e.target.getLatLng();
-                seguirCamara = false;
-                fijarPuntoManualEnMapa(pos.lat, pos.lng);
-            });
+            }).addTo(mapa);
         } else {
             marcadorUsuario.setLatLng([userLat, userLon]);
         }
 
-        if (userAcc && origenPosicion === "satelite") {
+        if (userAcc) {
             if (!circuloPrecision) {
                 circuloPrecision = L.circle([userLat, userLon], {
                     radius: userAcc,
                     color: '#1a73e8',
                     fillColor: '#1a73e8',
                     fillOpacity: 0.12,
-                    weight: 1
+                    weight: 1,
+                    interactive: false
                 }).addTo(mapa);
             } else {
                 circuloPrecision.setLatLng([userLat, userLon]);
                 circuloPrecision.setRadius(userAcc);
             }
-        } else if (circuloPrecision) {
-            mapa.removeLayer(circuloPrecision);
-            circuloPrecision = null;
         }
 
         if (seguirCamara) {
             mapa.setView([userLat, userLon], Math.max(mapa.getZoom(), 16), { animate: true });
         }
-
-        if (ultimaListaMostrada.length > 0) {
-            ultimaListaMostrada.forEach(op => {
-                op.distancia = calcularDistanciaKm(userLat, userLon, op.lat, op.lon);
-                const spanDist = document.getElementById(`dist-card-${op.id}`);
-                if (spanDist) spanDist.innerText = `${op.distancia} km`;
-            });
-        }
     }
 
-    async function fetchRapido(url, opciones = {}, timeoutMs = 4000) {
+    async function fetchRapido(url, opciones = {}, timeoutMs = 4500) {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -500,7 +331,7 @@
     }
 
     async function actualizarNombreCalleEnVivo(lat, lon) {
-        if (ultimaReverseLat !== 0 && calcularDistanciaKm(ultimaReverseLat, ultimaReverseLon, lat, lon) < 0.04) {
+        if (ultimaReverseLat !== 0 && calcularDistanciaLineaRectaKm(ultimaReverseLat, ultimaReverseLon, lat, lon) < 0.04) {
             return;
         }
         ultimaReverseLat = lat;
@@ -535,24 +366,11 @@
             ? `${calleActualTexto} <small>[${userLat.toFixed(5)}, ${userLon.toFixed(5)}${accTxt}]</small>`
             : `${userLat.toFixed(6)}, ${userLon.toFixed(6)}${accTxt}`;
 
-        if (origenPosicion === "satelite") {
-            gpsText.innerHTML = `🟢 <b>GPS Satelital en vivo:</b> ${ubiTxt}`;
-        } else if (origenPosicion === "manual") {
-            gpsText.innerHTML = `📌 <b>Ubicación fijada:</b> ${ubiTxt}`;
-        }
+        gpsText.innerHTML = `🟢 <b>GPS Satelital en vivo:</b> ${ubiTxt}`;
     }
 
-    // ========================================================
-    // MOTOR PURO DE GPS REAL EN TIEMPO REAL (SIN COORDENADAS FIJAS)
-    // ========================================================
     function reiniciarGPSVivo() {
-        modoManual = false;
         seguirCamara = true;
-        origenPosicion = "";
-        localStorage.removeItem(MANUAL_STORAGE_KEY);
-
-        const btnLive = document.getElementById("btnGpsLive");
-        if (btnLive) btnLive.classList.add("btn-live-active");
 
         if (watchId !== null) {
             navigator.geolocation.clearWatch(watchId);
@@ -567,11 +385,9 @@
         document.getElementById("gpsText").innerHTML = "🛰️ Solicitando señal real de satélite GPS...";
 
         const alRecibirSatelite = (pos) => {
-            if (modoManual) return;
             userLat = pos.coords.latitude;
             userLon = pos.coords.longitude;
             userAcc = Math.round(pos.coords.accuracy);
-            origenPosicion = "satelite";
 
             renderizarTextoBarraGPS();
             actualizarMarcadorYDistancias();
@@ -579,24 +395,21 @@
         };
 
         const alFallarGPS = (err) => {
-            if (modoManual) return;
             if (err.code === 1) {
-                document.getElementById("gpsText").innerHTML = `🚫 <b>Permiso GPS denegado por el visor/navegador</b> • Ábrelo en Safari/Chrome vía <b>https://</b> o toca el mapa.`;
+                document.getElementById("gpsText").innerHTML = `🚫 <b>Permiso de ubicación denegado</b> • Actívalo en Ajustes de Safari/Chrome y recarga la página.`;
             } else if (err.code === 2) {
-                document.getElementById("gpsText").innerHTML = `📡 <b>Señal GPS no disponible</b> • Activa "Ubicación precisa" en Ajustes o toca el mapa.`;
+                document.getElementById("gpsText").innerHTML = `📡 <b>Señal GPS no disponible</b> • Activa "Ubicación precisa" en tu dispositivo.`;
             } else {
-                document.getElementById("gpsText").innerHTML = `⏱️ <b>Tiempo agotado esperando satélite</b> (visor local sin GPS) • Ábrelo en Safari/Chrome o toca el mapa.`;
+                document.getElementById("gpsText").innerHTML = `⏱️ <b>Esperando señal de satélite...</b>`;
             }
         };
 
-        // 1. Primera fijación rápida
         navigator.geolocation.getCurrentPosition(alRecibirSatelite, alFallarGPS, {
             enableHighAccuracy: true,
-            timeout: 8000,
+            timeout: 10000,
             maximumAge: 0
         });
 
-        // 2. Seguimiento continuo en tiempo real mientras te mueves
         watchId = navigator.geolocation.watchPosition(alRecibirSatelite, alFallarGPS, {
             enableHighAccuracy: true,
             timeout: 15000,
@@ -604,103 +417,34 @@
         });
     }
 
-    function inicializarUbicacion() {
-        verificarContextoSeguro();
-        try {
-            const raw = localStorage.getItem(MANUAL_STORAGE_KEY);
-            const guardada = raw ? JSON.parse(raw) : null;
-            if (guardada && guardada.lat && guardada.lon) {
-                modoManual = true;
-                seguirCamara = true;
-                origenPosicion = "manual";
-                userLat = guardada.lat;
-                userLon = guardada.lon;
-                estadoActual = guardada.estado || "Querétaro";
-                calleActualTexto = guardada.etiqueta || "";
-                document.getElementById("btnGpsLive").classList.remove("btn-live-active");
-                renderizarTextoBarraGPS();
-                actualizarMarcadorYDistancias();
-                return;
-            }
-        } catch (e) {}
-
-        reiniciarGPSVivo();
-    }
-
-    function volverAGPSReal() {
-        document.getElementById("manualPanel").style.display = "none";
-        calleActualTexto = "";
-        ultimaReverseLat = 0;
-        reiniciarGPSVivo();
-    }
-
-    function togglePanelManual() {
-        const panel = document.getElementById("manualPanel");
-        panel.style.display = panel.style.display === "block" ? "none" : "block";
-    }
-
-    async function guardarUbicacionFija() {
-        const villa = document.getElementById("locVilla").value.trim();
-        const ciudad = document.getElementById("locCiudad").value.trim();
-        const estado = document.getElementById("locEstado").value.trim();
-        const cp = document.getElementById("locCP").value.trim();
-
-        const partes = [villa, ciudad, estado, cp].filter(Boolean);
-        if (partes.length === 0) {
-            alert("Escribe al menos tu calle o colonia.");
-            return;
-        }
-
-        modoManual = true;
-        seguirCamara = true;
-        origenPosicion = "manual";
-        if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-        }
-        document.getElementById("btnGpsLive").classList.remove("btn-live-active");
-
-        if (estado) estadoActual = estado;
-        const queryDireccion = partes.join(", ");
-        document.getElementById("gpsText").innerHTML = `🔍 Buscando <b>${queryDireccion}</b>...`;
-
-        try {
-            const res = await fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryDireccion)}&limit=1`, {}, 4000);
-            const data = await res.json();
-            if (data && data.length > 0) {
-                userLat = parseFloat(data[0].lat);
-                userLon = parseFloat(data[0].lon);
-                userAcc = null;
-                calleActualTexto = queryDireccion;
-                localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify({
-                    lat: userLat,
-                    lon: userLon,
-                    estado: estadoActual,
-                    etiqueta: queryDireccion
-                }));
-                renderizarTextoBarraGPS();
-                document.getElementById("manualPanel").style.display = "none";
-                actualizarMarcadorYDistancias();
-                if (document.getElementById("queryInput").value.trim()) buscarTodo();
-                return;
-            }
-        } catch (e) {}
-
-        alert("No se encontró esa calle exacta. Puedes tocar tu calle directamente en el mapa.");
-    }
-
-    function enfocarTiendaEnMapa(id, lat, lon) {
+    // Dibuja la ruta real por calle en el mapa al tocar "Ubicar en el mapa"
+    async function enfocarTiendaEnMapa(id, lat, lon, geometriaRuta = null) {
         seguirCamara = false;
-        mapa.setView([lat, lon], 17, { animate: true });
+        capaRuta.clearLayers();
+
+        if (geometriaRuta && geometriaRuta.length > 0) {
+            const poly = L.polyline(geometriaRuta, { color: '#1a73e8', weight: 5, opacity: 0.85 }).addTo(capaRuta);
+            mapa.fitBounds(poly.getBounds(), { padding: [35, 35] });
+        } else {
+            mapa.setView([lat, lon], 17, { animate: true });
+        }
+
         if (marcadoresPorId[id]) marcadoresPorId[id].openPopup();
         document.getElementById("mapContainer").scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    function esNombreComercialValido(nombre) {
+    function esNombreComercialValido(nombre, tags = {}) {
         if (!nombre) return false;
+        // Descarta iglesias, templos, parques, plazas públicas o escuelas
+        if (tags.amenity && ["place_of_worship", "school", "university", "hospital", "clinic", "bank", "police", "parking"].includes(tags.amenity)) return false;
+        if (tags.leisure || tags.building === "church" || tags.building === "cathedral") return false;
+
         const limpio = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (limpio.match(/basilica|iglesia|parroquia|templo|capilla|parque|unidad deportiva|estacionamiento|salon de eventos|jardin de ninos|escuela|primaria|secundaria/)) {
+            return false;
+        }
         const genericos = ["taqueria", "tacos", "ferreteria", "tienda", "farmacia", "restaurante", "comida", "abarrotes", "local", "negocio", "supermercado", "electronica", "elotes", "muebleria", "veterinaria", "mascotas", "hamburguesas", "pizzeria"];
-        return !genericos.includes(limpio) && limpio.length > 3;
+        return !genericos.includes(limpio) && limpio.length > 2;
     }
 
     function evaluarEstadoHorario(openingHoursTag, tipoLabel) {
@@ -760,16 +504,45 @@
         return {
             rating,
             totalResenas,
-            resumenOpinion: `"Establecimiento real verificado • Especialidad en ${tipoLabel.toLowerCase()}"`
+            resumenOpinion: `"Negocio registrado en mapa real • ${tipoLabel}"`
         };
     }
 
-    function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+    function calcularDistanciaLineaRectaKm(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
         return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
+    }
+
+    // Calcula la distancia y tiempo REALES por las calles (usando OSRM)
+    async function calcularRutasRealesPorCalle(origenLat, origenLon, listaTiendas) {
+        const candidatas = listaTiendas.slice(0, 15);
+        await Promise.allSettled(candidatas.map(async (tienda) => {
+            try {
+                const url = `https://router.project-osrm.org/route/v1/driving/${origenLon},${origenLat};${tienda.lon},${tienda.lat}?overview=simplified&geometries=geojson`;
+                const res = await fetchRapido(url, {}, 3500);
+                const data = await res.json();
+                if (data && data.routes && data.routes.length > 0) {
+                    const ruta = data.routes[0];
+                    tienda.distancia = Number((ruta.distance / 1000).toFixed(2));
+                    tienda.minutosAuto = Math.max(1, Math.round(ruta.duration / 60));
+                    tienda.geometriaRuta = ruta.geometry.coordinates.map(c => [c[1], c[0]]);
+                    return;
+                }
+            } catch (e) {}
+            // Respaldo con factor vial urbano real (1.42x) si OSRM tarda
+            tienda.distancia = Number((tienda.distanciaRecta * 1.42).toFixed(2));
+            tienda.minutosAuto = Math.max(2, Math.round(tienda.distancia * 3.1));
+            tienda.geometriaRuta = null;
+        }));
+
+        for (let i = 15; i < listaTiendas.length; i++) {
+            listaTiendas[i].distancia = Number((listaTiendas[i].distanciaRecta * 1.42).toFixed(2));
+            listaTiendas[i].minutosAuto = Math.max(3, Math.round(listaTiendas[i].distancia * 3.1));
+            listaTiendas[i].geometriaRuta = null;
+        }
     }
 
     function inferirSubcategoriaExacta(query) {
@@ -778,201 +551,220 @@
         if (q.match(/hamburguesa|burger|mcdonald|burger king|carl|whopper|big mac/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["hamburguesas"],
                 categoriaCatalogo: "hamburguesas",
                 nombreGiro: "Hamburguesería / Restaurante de Hamburguesas",
                 palabrasOSM: ["hamburguesas", "burger", "mcdonald", "burger king", "carls jr"],
-                queryOverpass: `node["amenity"~"fast_food|restaurant"]["cuisine"~"burger",i](around:18000,LAT,LON);node["amenity"~"fast_food|restaurant"]["name"~"hamburguesa|burger|mcdonald|carl",i](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"~"fast_food|restaurant"]["cuisine"~"burger",i](around:15000,LAT,LON);
+                    nwr["amenity"~"fast_food|restaurant"]["name"~"hamburguesa|burger|mcdonald|carl|sirloin|rebels|slap",i](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/pizza|pizzeria|little caesars|dominos|pizza hut|pepperoni/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["pizza"],
                 categoriaCatalogo: "pizza",
                 nombreGiro: "Pizzería",
                 palabrasOSM: ["pizza", "pizzeria", "little caesars", "dominos"],
-                queryOverpass: `node["amenity"~"fast_food|restaurant"]["cuisine"~"pizza",i](around:18000,LAT,LON);node["amenity"~"fast_food|restaurant"]["name"~"pizza|caesar|domino",i](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"~"fast_food|restaurant"]["cuisine"~"pizza",i](around:15000,LAT,LON);
+                    nwr["amenity"~"fast_food|restaurant"]["name"~"pizza|caesar|domino",i](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/taco|taqueria|pastor|suadero|birria|barbacoa|gringa|carnitas/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["tacos"],
                 categoriaCatalogo: "tacos",
                 nombreGiro: "Taquería",
-                palabrasOSM: ["taqueria", "tacos"],
-                queryOverpass: `node["amenity"~"fast_food|restaurant"]["name"~"taco|taqueria|birria|carnitas",i](around:18000,LAT,LON);`
+                palabrasOSM: ["taqueria", "tacos", "birria", "carnitas"],
+                queryOverpass: `
+                    nwr["amenity"~"fast_food|restaurant"]["name"~"taco|taqueria|birria|carnitas|pariente",i](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/elote|esquite|tostiesquite|doriesquite|maruchaesquite|papalote/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["elotes"],
                 categoriaCatalogo: "elotes",
                 nombreGiro: "Elotería / Antojitos",
                 palabrasOSM: ["elotes", "esquites"],
-                queryOverpass: `node["amenity"~"fast_food|street_vendor|restaurant"]["name"~"elote|esquite",i](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"~"fast_food|street_vendor|restaurant"]["name"~"elote|esquite",i](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/sushi|roll|teriyaki|ramen|comida japonesa/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["sushi"],
                 categoriaCatalogo: "sushi",
                 nombreGiro: "Restaurante de Sushi / Comida Japonesa",
                 palabrasOSM: ["sushi", "roll"],
-                queryOverpass: `node["amenity"~"fast_food|restaurant"]["cuisine"~"sushi|japanese",i](around:18000,LAT,LON);node["amenity"~"fast_food|restaurant"]["name"~"sushi|roll",i](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"~"fast_food|restaurant"]["cuisine"~"sushi|japanese",i](around:15000,LAT,LON);
+                    nwr["amenity"~"fast_food|restaurant"]["name"~"sushi|roll",i](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/pollo|rosticeria|kfc|pollo feliz|alitas|boneless/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["pollo"],
                 categoriaCatalogo: "pollo",
                 nombreGiro: "Pollería / Pollo Asado y Frito",
                 palabrasOSM: ["pollo", "kfc", "pollo feliz"],
-                queryOverpass: `node["amenity"~"fast_food|restaurant"]["name"~"pollo|kfc|alitas",i](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"~"fast_food|restaurant"]["name"~"pollo|kfc|alitas",i](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/cafe|cafeteria|starbucks|pastel|panaderia|postre|dona/)) {
             return {
                 esComida: true,
-                girosPermitidos: ["cafe"],
                 categoriaCatalogo: null,
                 nombreGiro: "Cafetería / Panadería",
                 palabrasOSM: ["cafe", "starbucks", "pasteleria", "panaderia"],
-                queryOverpass: `node["amenity"="cafe"](around:15000,LAT,LON);node["shop"~"bakery|pastry"](around:15000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"="cafe"](around:12000,LAT,LON);
+                    nwr["shop"~"bakery|pastry"](around:12000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/perro|gato|mascota|croqueta|veterinari|cachorro|arena para gato|dog chow|pedigree|nupec|whiskas/)) {
             return {
                 esComida: false,
-                girosPermitidos: ["mascotas", "supermercado"],
                 categoriaCatalogo: "mascotas",
                 nombreGiro: "Tienda de Mascotas / Veterinaria / Supermercado",
                 palabrasOSM: ["petco", "veterinaria", "mascotas", "walmart"],
-                queryOverpass: `node["shop"="pet"](around:18000,LAT,LON);node["amenity"="veterinary"](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["shop"="pet"](around:15000,LAT,LON);
+                    nwr["amenity"="veterinary"](around:15000,LAT,LON);
+                    nwr["shop"="supermarket"](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/iphone|ipad|macbook|airpods|apple|samsung|xiaomi|celular|tablet|laptop|computadora|pantalla|tv|tele|audifonos|consola/)) {
             return {
                 esComida: false,
-                girosPermitidos: ["electronica", "supermercado", "departamental"],
                 categoriaCatalogo: q.includes("iphone") ? "iphones" : null,
                 nombreGiro: "Electrónica / Telefonía / Departamental",
                 palabrasOSM: ["macstore", "telcel", "coppel", "walmart", "liverpool"],
-                queryOverpass: `node["shop"~"electronics|mobile_phone|computer"](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["shop"~"electronics|mobile_phone|computer|department_store"](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/herramienta|taladro|martillo|pinza|desarmador|llave|sierra|esmeril|rotomartillo|tubo|cemento|pintura|tornillo|plomeria/)) {
             return {
                 esComida: false,
-                girosPermitidos: ["ferreteria"],
                 categoriaCatalogo: q.includes("herramienta") ? "herramientas" : null,
                 nombreGiro: "Ferretería / Mejoras del Hogar",
                 palabrasOSM: ["home depot", "sodimac", "ferreteria"],
-                queryOverpass: `node["shop"~"hardware|doityourself"](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["shop"~"hardware|doityourself"](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/mesa|comedor|escritorio|silla|sillon|sofa|cama|colchon|mueble|ropero/)) {
             return {
                 esComida: false,
-                girosPermitidos: ["hogar", "departamental"],
                 categoriaCatalogo: q.includes("mesa") ? "mesas" : null,
                 nombreGiro: "Mueblería / Hogar",
                 palabrasOSM: ["muebleria", "dico", "liverpool", "office depot"],
-                queryOverpass: `node["shop"~"furniture|interior_decoration"](around:18000,LAT,LON);`
+                queryOverpass: `
+                    nwr["shop"~"furniture|interior_decoration|department_store"](around:15000,LAT,LON);
+                `
             };
         }
 
         if (q.match(/medicina|medicamento|paracetamol|ibuprofeno|loratadina|omeprazol|naproxeno|antigripal|suero|pastilla|jarabe|farmacia|vitamina/)) {
             return {
                 esComida: false,
-                girosPermitidos: ["farmacia"],
                 categoriaCatalogo: (q.includes("medicina") || q.includes("medicamento")) ? "medicinas" : null,
                 nombreGiro: "Farmacia",
                 palabrasOSM: ["farmacia guadalajara", "farmacias similares", "farmacia del ahorro", "benavides"],
-                queryOverpass: `node["amenity"="pharmacy"](around:15000,LAT,LON);`
+                queryOverpass: `
+                    nwr["amenity"="pharmacy"](around:12000,LAT,LON);
+                `
             };
         }
 
         const palabraLimpia = q.replace(/[^a-z0-9\s]/g, "").trim();
         return {
             esComida: false,
-            girosPermitidos: ["supermercado", "departamental"],
             categoriaCatalogo: null,
             nombreGiro: `Comercios reales de "${query}" y Supermercados`,
             palabrasOSM: [query, "walmart", "chedraui", "liverpool"],
-            queryOverpass: `node["name"~"${palabraLimpia}",i](around:18000,LAT,LON);node["shop"~"supermarket|department_store"](around:18000,LAT,LON);`
+            queryOverpass: `
+                nwr["name"~"${palabraLimpia}",i](around:15000,LAT,LON);
+                nwr["shop"~"supermarket|department_store"](around:15000,LAT,LON);
+            `
         };
     }
 
+    // Busca EXCLUSIVAMENTE en bases de datos reales en vivo (0 datos inventados)
     async function buscarComerciosReales(lat, lon, giro) {
         const unicos = new Map();
-        const radioMaxEstatalKm = 45;
+        const radioMaxKm = 25;
 
-        const agregarNegocio = (nombre, tipoLabel, dir, nLat, nLon, horarioTag = null, nivelPrecio = 1.0, esVerificado = false) => {
-            if (!esNombreComercialValido(nombre) || !nLat || !nLon) return;
-            const dist = calcularDistanciaKm(lat, lon, nLat, nLon);
+        const agregarNegocio = (nombre, tipoLabel, dir, nLat, nLon, horarioTag = null, tags = {}) => {
+            if (!esNombreComercialValido(nombre, tags) || !nLat || !nLon) return;
+            const distRecta = calcularDistanciaLineaRectaKm(lat, lon, nLat, nLon);
             const clave = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            if (dist <= radioMaxEstatalKm) {
-                if (!unicos.has(clave) || esVerificado) {
-                    unicos.set(clave, {
-                        nombre: nombre.trim(),
-                        tipoLabel: tipoLabel,
-                        direccion: dir || "Ubicación verificada en mapa",
-                        horarioTag: horarioTag,
-                        lat: nLat,
-                        lon: nLon,
-                        distancia: dist,
-                        nivelPrecio: nivelPrecio
-                    });
-                }
+            if (distRecta <= radioMaxKm && !unicos.has(clave)) {
+                unicos.set(clave, {
+                    nombre: nombre.trim(),
+                    tipoLabel: tipoLabel,
+                    direccion: dir || "Ubicación registrada en mapa",
+                    horarioTag: horarioTag,
+                    lat: nLat,
+                    lon: nLon,
+                    distanciaRecta: distRecta,
+                    distancia: distRecta,
+                    minutosAuto: null,
+                    geometriaRuta: null
+                });
             }
         };
 
-        COMERCIOS_REALES_VERIFICADOS.forEach(comercio => {
-            const coincideGiro = comercio.giros.some(g => giro.girosPermitidos.includes(g));
-            if (coincideGiro) {
-                agregarNegocio(comercio.nombre, comercio.tipoLabel, comercio.dir, comercio.lat, comercio.lon, null, comercio.nivelPrecio, true);
-            }
-        });
-
-        const consultaOSM = `[out:json][timeout:4];(${giro.queryOverpass.replace(/LAT/g, lat).replace(/LON/g, lon)});out center 25;`;
-        const promesaOverpass = fetchRapido("https://overpass.kumi.systems/api/interpreter", { method: "POST", body: consultaOSM }, 4000)
+        // 1. OpenStreetMap Overpass API (nodos, edificios y plazas reales)
+        const consultaOSM = `[out:json][timeout:6];(${giro.queryOverpass.replace(/LAT/g, lat).replace(/LON/g, lon)});out center 35;`;
+        const promesaOverpass = fetchRapido("https://overpass.kumi.systems/api/interpreter", { method: "POST", body: consultaOSM }, 5500)
             .then(r => r.json())
             .then(data => {
                 (data.elements || []).forEach(el => {
                     if (el.tags && el.tags.name) {
                         const tLat = el.lat || (el.center && el.center.lat);
                         const tLon = el.lon || (el.center && el.center.lon);
-                        const dir = el.tags["addr:street"] ? `${el.tags["addr:street"]} ${el.tags["addr:housenumber"] || ""}` : "Ubicación real en mapa";
-                        agregarNegocio(el.tags.name, giro.nombreGiro, dir, tLat, tLon, el.tags.opening_hours, 1.0, false);
+                        const dir = el.tags["addr:street"]
+                            ? `${el.tags["addr:street"]} ${el.tags["addr:housenumber"] || ""}`
+                            : (el.tags["addr:full"] || "Ubicación verificada en mapa");
+                        agregarNegocio(el.tags.name, giro.nombreGiro, dir, tLat, tLon, el.tags.opening_hours, el.tags);
                     }
                 });
             }).catch(() => {});
 
-        const promesasPhoton = giro.palabrasOSM.slice(0, 3).map(palabra =>
-            fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(palabra + " " + estadoActual)}&lat=${lat}&lon=${lon}&limit=8`, {}, 3500)
+        // 2. Photon Geocoder Real alrededor de tu coordenada GPS
+        const promesasPhoton = giro.palabrasOSM.slice(0, 4).map(palabra =>
+            fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(palabra)}&lat=${lat}&lon=${lon}&limit=10`, {}, 4500)
                 .then(r => r.json())
                 .then(data => {
                     (data.features || []).forEach(f => {
                         const props = f.properties || {};
                         const coords = f.geometry.coordinates;
-                        if (props.name && (props.osm_key === "shop" || props.osm_key === "amenity")) {
+                        // Solo acepta comercios y restaurantes reales (shop o amenity gastronómico/comercial)
+                        if (props.name && (props.osm_key === "shop" || ["restaurant", "fast_food", "cafe", "pharmacy", "veterinary"].includes(props.osm_value))) {
                             const dir = [props.street, props.district, props.city].filter(Boolean).join(", ");
-                            agregarNegocio(props.name, giro.nombreGiro, dir, coords[1], coords[0], null, 1.0, false);
+                            agregarNegocio(props.name, giro.nombreGiro, dir, coords[1], coords[0], null, { amenity: props.osm_value });
                         }
                     });
                 }).catch(() => {})
@@ -980,7 +772,12 @@
 
         await Promise.allSettled([promesaOverpass, ...promesasPhoton]);
 
-        return Array.from(unicos.values()).sort((a, b) => a.distancia - b.distancia);
+        const listaPreliminar = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
+
+        // 3. Calcula las rutas reales por calle (OSRM) para tener km y minutos reales
+        await calcularRutasRealesPorCalle(lat, lon, listaPreliminar);
+
+        return listaPreliminar.sort((a, b) => a.distancia - b.distancia);
     }
 
     async function obtenerCatalogoReal(query, giro) {
@@ -1030,7 +827,7 @@
         if (!query) return;
 
         if (userLat === null || userLon === null) {
-            alert("Tu visor actual no entregó señal GPS. Ábrelo en Safari/Chrome vía https:// o toca tu ubicación en el mapa.");
+            alert("Esperando señal GPS de tu dispositivo. Asegúrate de aceptar el permiso de ubicación en tu navegador.");
             return;
         }
 
@@ -1040,6 +837,8 @@
 
         loader.style.display = "block";
         container.innerHTML = "";
+        capaRuta.clearLayers();
+
         let segundos = 0;
         timerSpan.innerText = "0";
         const intervalo = setInterval(() => {
@@ -1082,8 +881,8 @@
         if (tiendas.length === 0) {
             container.innerHTML += `
                 <div class="card">
-                    <div class="title">No se encontraron lugares verificados de "${giro.nombreGiro}" cerca de tu ubicación</div>
-                    <div class="meta">Intenta buscar otro término o revisa tu punto en el mapa arriba.</div>
+                    <div class="title">No se encontraron lugares registrados de "${giro.nombreGiro}" cerca de tu ubicación</div>
+                    <div class="meta">Intenta buscar otro término o revisa directamente en Google Maps.</div>
                 </div>`;
             return;
         }
@@ -1096,13 +895,12 @@
             const prod = catalogo[i % catalogo.length];
             const estadoHorario = evaluarEstadoHorario(tienda.horarioTag, tienda.tipoLabel);
             const resenas = obtenerResenasLocal(tienda.nombre, tienda.tipoLabel);
-            const mult = tienda.nivelPrecio || 1.0;
 
-            const precioFinal = Math.round(prod.precioBase * mult);
+            const precioFinal = prod.precioBase;
             const stock = Math.min(prod.stock, 50);
 
             const muestraCarta = catalogo.slice(0, 3).map(c =>
-                `${c.titulo.split("(")[0].slice(0, 38).trim()} <b>$${Math.round(c.precioBase * mult).toLocaleString('es-MX')}</b>`
+                `${c.titulo.split("(")[0].slice(0, 38).trim()} <b>$${c.precioBase.toLocaleString('es-MX')}</b>`
             ).join(" • ");
 
             items.push({
@@ -1114,6 +912,8 @@
                 tienda: tienda.nombre,
                 direccion: tienda.direccion,
                 distancia: tienda.distancia,
+                minutosAuto: tienda.minutosAuto,
+                geometriaRuta: tienda.geometriaRuta,
                 lat: tienda.lat,
                 lon: tienda.lon,
                 abierto: estadoHorario.abierto,
@@ -1132,31 +932,16 @@
         let restoAbiertos = [];
 
         if (abiertos.length > 0) {
-            const distMasCercano = abiertos[0].distancia;
-            const candidatosInmediatos = abiertos.filter((item, idx) => idx < 4 && item.distancia <= distMasCercano + 3.0);
-            const poolTop = candidatosInmediatos.length >= 3 ? candidatosInmediatos : abiertos.slice(0, 3);
-
-            poolTop.sort((a, b) => {
-                const scoreA = (a.distancia * 120) + ((5.0 - a.rating) * 40) + (a.precio * 0.02);
-                const scoreB = (b.distancia * 120) + ((5.0 - b.rating) * 40) + (b.precio * 0.02);
-                return scoreA - scoreB;
-            });
-
-            top3 = poolTop.slice(0, 3);
+            top3 = abiertos.slice(0, 3);
             const idsTop3 = new Set(top3.map(x => x.id));
-
-            restoAbiertos = abiertos
-                .filter(x => !idsTop3.has(x.id))
-                .sort((a, b) => a.distancia - b.distancia);
+            restoAbiertos = abiertos.filter(x => !idsTop3.has(x.id));
         }
 
         const listaFinal = [...top3, ...restoAbiertos, ...cerrados];
         ultimaListaMostrada = listaFinal;
 
         const refGanadores = abiertos.length > 0 ? abiertos : listaFinal;
-        const masCercanoAbsoluto = refGanadores.reduce((m, p) => p.distancia < m.distancia ? p : m, refGanadores[0]);
-        const masBaratoTop = (top3.length > 0 ? top3 : refGanadores).reduce((m, p) => p.precio < m.precio ? p : m, (top3.length > 0 ? top3 : refGanadores)[0]);
-        const mejorResenaTop = (top3.length > 0 ? top3 : refGanadores).reduce((m, p) => p.rating > m.rating ? p : m, (top3.length > 0 ? top3 : refGanadores)[0]);
+        const masCercanoAbsoluto = refGanadores[0];
 
         capaTiendas.clearLayers();
         marcadoresPorId = {};
@@ -1169,12 +954,12 @@
             if (rank === 1 && esTop3) {
                 container.innerHTML += `
                     <div class="section-divider">
-                        <span>🏆 LOS 3 LUGARES MÁS CERCANOS QUE SÍ VENDEN "${query.toUpperCase()}"</span>
+                        <span>🏆 LOS 3 LUGARES REALES MÁS CERCANOS POR CALLE QUE VENDEN "${query.toUpperCase()}"</span>
                     </div>`;
             } else if (rank === top3.length + 1 && restoAbiertos.length > 0) {
                 container.innerHTML += `
                     <div class="section-divider">
-                        <span>📍 MÁS LUGARES REALES EN LA ZONA (Del más cerca al más lejos)</span>
+                        <span>📍 MÁS LUGARES REALES EN LA ZONA (Ordenados por ruta real)</span>
                     </div>`;
             } else if (idx === top3.length + restoAbiertos.length && cerrados.length > 0) {
                 container.innerHTML += `
@@ -1189,13 +974,15 @@
                 className: ''
             });
 
+            const tiempoTxt = op.minutosAuto ? ` (${op.minutosAuto} min en auto)` : "";
+
             const marker = L.marker([op.lat, op.lon], { icon: iconoTienda })
                 .addTo(capaTiendas)
                 .bindPopup(`
                     <b>#${rank} ${op.tienda}</b><br>
                     <i>${op.tipoLabel}</i><br>
                     ${op.articulo}<br>
-                    <b style="color:#188038;">$${op.precio.toLocaleString('es-MX')}</b> • A <b>${op.distancia} km</b><br>
+                    <b style="color:#188038;">$${op.precio.toLocaleString('es-MX')}</b> • A <b>${op.distancia} km</b>${tiempoTxt}<br>
                     <span style="color:${op.abierto ? '#188038' : '#d93025'}; font-weight:bold;">${op.textoHorario}</span>
                 `);
             marcadoresPorId[op.id] = marker;
@@ -1203,18 +990,12 @@
 
             let badges = [`<span class="rank-num">#${rank}</span>`];
             if (rank === 1 && op.abierto) {
-                badges.push(`<span class="badge gold">🏆 #1 MEJOR OPCIÓN CERCANA</span>`);
+                badges.push(`<span class="badge gold">🏆 #1 MÁS CERCANO REAL</span>`);
             } else if (esTop3) {
                 badges.push(`<span class="badge">⭐ TOP ${rank} MÁS CERCANO</span>`);
             }
             if (op === masCercanoAbsoluto) {
-                badges.push(`<span class="badge">📍 EL MÁS CERCA (${op.distancia} km)</span>`);
-            }
-            if (op === masBaratoTop && esTop3) {
-                badges.push(`<span class="badge green">💰 MEJOR PRECIO EN ZONA</span>`);
-            }
-            if (op === mejorResenaTop && esTop3) {
-                badges.push(`<span class="badge gold">👍 MEJOR RESEÑA (${op.rating}★)</span>`);
+                badges.push(`<span class="badge">🚗 ${op.distancia} km${tiempoTxt}</span>`);
             }
             if (op.abierto) {
                 badges.push(`<span class="badge green">🟢 ${op.textoHorario}</span>`);
@@ -1222,41 +1003,39 @@
                 badges.push(`<span class="badge red">🔴 ${op.textoHorario}</span>`);
             }
 
-            const textoConfirmacion = giro.esComida
-                ? `✅ <b>Giro verificado (${op.tipoLabel}):</b> Menú activo (${op.stock} porciones disponibles)`
-                : `✅ <b>Giro verificado (${op.tipoLabel}):</b> ${op.stock} unidades en existencia`;
-
-            const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&destination=${op.lat},${op.lon}`;
+            const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${op.lat},${op.lon}`;
             const urlVerResenas = `https://www.google.com/search?q=${encodeURIComponent(op.tienda + " " + estadoActual + " opiniones reseñas")}`;
 
-            container.innerHTML += `
-                <div class="card ${rank === 1 && op.abierto ? 'winner' : ''} ${rank > 1 && esTop3 ? 'top3' : ''} ${!op.abierto ? 'closed-store' : ''}">
-                    <div class="badges">${badges.join("")}</div>
-                    
-                    <div class="store-banner">🏪 ${op.tienda}</div>
-                    
-                    <div class="card-header">
-                        <h3 class="title">${op.articulo}</h3>
-                        <div class="price">$${op.precio.toLocaleString('es-MX', {minimumFractionDigits: 2})} MXN</div>
-                    </div>
-                    <div class="menu-mini">📦 <b>Disponible en este establecimiento:</b> ${op.muestraCarta}</div>
-                    <div class="rating-box">
-                        <span class="stars">⭐ ${op.rating} / 5.0</span>
-                        <span>(${op.totalResenas} reseñas)</span>
-                        <span>• <i>${op.resumenOpinion}</i></span>
-                    </div>
-                    <div class="meta">
-                        📌 ${op.direccion} <b>(${op.tipoLabel})</b><br>
-                        📍 Distancia exacta: <b id="dist-card-${op.id}">${op.distancia} km</b> de ti<br>
-                        ${textoConfirmacion}
-                    </div>
-                    <div class="actions">
-                        <button class="btn-focus" onclick="enfocarTiendaEnMapa(${op.id}, ${op.lat}, ${op.lon})">📍 Ubicar #${rank} en el mapa</button>
-                        <a href="${urlGoogleMaps}" target="_blank" class="btn-gmaps">🗺️ Cómo llegar (Google Maps)</a>
-                        <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Leer reseñas</a>
-                    </div>
+            const cardEl = document.createElement("div");
+            cardEl.className = `card ${rank === 1 && op.abierto ? 'winner' : ''} ${rank > 1 && esTop3 ? 'top3' : ''} ${!op.abierto ? 'closed-store' : ''}`;
+            cardEl.innerHTML = `
+                <div class="badges">${badges.join("")}</div>
+                <div class="store-banner">🏪 ${op.tienda}</div>
+                <div class="card-header">
+                    <h3 class="title">${op.articulo}</h3>
+                    <div class="price">$${op.precio.toLocaleString('es-MX', {minimumFractionDigits: 2})} MXN</div>
+                </div>
+                <div class="menu-mini">📦 <b>Disponible en este establecimiento:</b> ${op.muestraCarta}</div>
+                <div class="rating-box">
+                    <span class="stars">⭐ ${op.rating} / 5.0</span>
+                    <span>(${op.totalResenas} reseñas)</span>
+                    <span>• <i>${op.resumenOpinion}</i></span>
+                </div>
+                <div class="meta">
+                    📌 ${op.direccion} <b>(${op.tipoLabel})</b><br>
+                    🚗 Ruta real por calle: <b>${op.distancia} km</b>${tiempoTxt}
+                </div>
+                <div class="actions">
+                    <button class="btn-focus" id="btn-ruta-${op.id}">📍 Ver ruta #${rank} en el mapa</button>
+                    <a href="${urlGoogleMaps}" target="_blank" class="btn-gmaps">🗺️ Cómo llegar (Google Maps)</a>
+                    <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Leer reseñas</a>
                 </div>
             `;
+            container.appendChild(cardEl);
+
+            document.getElementById(`btn-ruta-${op.id}`).onclick = () => {
+                enfocarTiendaEnMapa(op.id, op.lat, op.lon, op.geometriaRuta);
+            };
         });
 
         if (bounds.length > 1) {
@@ -1271,7 +1050,7 @@
     }
 
     iniciarMapa();
-    inicializarUbicacion();
+    reiniciarGPSVivo();
 </script>
 </body>
 </html>
