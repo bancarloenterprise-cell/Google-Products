@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Global - Todos los Locales del Mundo por Cercanía Real</title>
+    <title>OmniLocal Earth & Maps - Todos los Locales del Mundo</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -41,15 +41,16 @@
 
         .map-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
         .tab-btn {
-            flex: 1; min-width: 140px; padding: 9px 12px; border-radius: 10px; border: 1px solid #dadce0;
-            background: white; color: #3c4043; font-size: 13px; font-weight: 700; cursor: pointer;
+            flex: 1; min-width: 125px; padding: 9px 10px; border-radius: 10px; border: 1px solid #dadce0;
+            background: white; color: #3c4043; font-size: 12.5px; font-weight: 700; cursor: pointer;
         }
         .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .tab-btn.gmaps-tab.active { background: #188038; border-color: #188038; }
+        .tab-btn.earth-tab.active { background: #202124; border-color: #202124; color: white; }
+        .tab-btn.gmaps-tab.active { background: #188038; border-color: #188038; color: white; }
 
         .map-wrapper { position: relative; margin-bottom: 10px; }
         #mapContainer, #gmapsFrameContainer {
-            width: 100%; height: 350px; border-radius: 14px;
+            width: 100%; height: 360px; border-radius: 14px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #dadce0; z-index: 1;
             overflow: hidden; background: white;
         }
@@ -61,6 +62,19 @@
             background: white; color: #202124; border: 1px solid #dadce0; padding: 8px 14px;
             border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .free-key-bar {
+            background: #f1f3f4; border: 1px solid #dadce0; border-radius: 10px; padding: 8px 12px;
+            margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 6px; font-size: 12px; color: #3c4043;
+        }
+        .free-key-bar input {
+            padding: 5px 9px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; min-width: 190px;
+        }
+        .free-key-bar button {
+            background: #202124; color: white; border: none; padding: 5px 10px; border-radius: 6px;
+            font-size: 11.5px; font-weight: 700; cursor: pointer;
         }
 
         .route-banner {
@@ -146,7 +160,7 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">Barrido Mundial en Tiempo Real • Desde tu cuadra hasta todo el planeta</div>
+        <div class="subtitle">Satélite Earth HD + Google Maps en Vivo + Todos los Locales del Mundo</div>
     </header>
 
     <div class="gps-bar">
@@ -163,7 +177,7 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="queryInput" placeholder="Busca cualquier tienda, restaurante, taller, clínica, hotel o servicio..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
+        <input type="text" id="queryInput" placeholder="Busca cualquier local, tienda, restaurante, taller, clínica o hotel..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
         <button onclick="buscarTodo(false)">Buscar en Todo</button>
     </div>
 
@@ -179,9 +193,10 @@
     </div>
 
     <div class="map-tabs">
-        <button id="tabBtnRuta" class="tab-btn active" onclick="cambiarVistaMapa('ruta')">🛣️ Mapa de Rutas y Distancias</button>
-        <button id="tabBtnGmaps" class="tab-btn gmaps-tab" onclick="cambiarVistaMapa('gmaps')">🗺️ Google Maps en Vivo (Todos los pines)</button>
-        <button class="tab-btn" onclick="cambiarVistaMapa('ambos')">🔀 Ver Ambos Mapas Juntos</button>
+        <button id="tabBtnCalles" class="tab-btn active" onclick="cambiarVistaMapa('calles')">🛣️ Mapa Calles y Rutas</button>
+        <button id="tabBtnEarth" class="tab-btn earth-tab" onclick="cambiarVistaMapa('earth')">🛰️ Satélite Earth HD</button>
+        <button id="tabBtnGmaps" class="tab-btn gmaps-tab" onclick="cambiarVistaMapa('gmaps')">🗺️ Google Maps en Vivo</button>
+        <button id="tabBtnAmbos" class="tab-btn" onclick="cambiarVistaMapa('ambos')">🔀 Ver Satélite + Google Maps</button>
     </div>
 
     <div class="map-wrapper">
@@ -193,13 +208,22 @@
         <iframe id="gmapsIframe" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
 
+    <div class="free-key-bar">
+        <span id="geoapifyStatus">🆓 <b>Ampliador gratuito sin tarjeta (Geoapify):</b> Opcional para sumar aún más comercios a la lista</span>
+        <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <input type="text" id="geoapifyKeyInput" placeholder="Pega API Key gratuita de Geoapify (opcional)">
+            <button onclick="guardarGeoapifyKey()">Activar</button>
+        </div>
+    </div>
+
     <div id="routeBanner" class="route-banner"></div>
 
-    <div id="loader" class="loader">🌍 Escaneando primero tu calle y colonia, y después todo el mapa mundial... (<span id="timerSec">0</span>s)</div>
+    <div id="loader" class="loader">🌍 Escaneando por anillos concéntricos desde tu cuadra hasta todo el mundo... (<span id="timerSec">0</span>s)</div>
     <div id="results"></div>
 </div>
 
 <script>
+    let geoapifyKey = localStorage.getItem("omnilocal_geoapify_key") || "";
     let userLat = null;
     let userLon = null;
     let userAcc = null;
@@ -210,41 +234,80 @@
     let seguirCamara = true;
     let watchId = null;
     let mapa = null;
+    let capaBaseCalles = null;
+    let capaBaseSatelite = null;
+    let capaEtiquetasSatelite = null;
     let marcadorUsuario = null;
     let circuloPrecision = null;
     let capaTiendas = null;
     let capaRuta = null;
     let marcadoresPorId = {};
 
+    if (geoapifyKey) {
+        document.getElementById("geoapifyKeyInput").value = geoapifyKey;
+        document.getElementById("geoapifyStatus").innerHTML = "✅ <b>Motor Geoapify Gratuito Activo:</b> Sumando comercios extra en cada búsqueda.";
+    }
+
+    function guardarGeoapifyKey() {
+        const val = document.getElementById("geoapifyKeyInput").value.trim();
+        geoapifyKey = val;
+        if (val) {
+            localStorage.setItem("omnilocal_geoapify_key", val);
+            document.getElementById("geoapifyStatus").innerHTML = "✅ <b>Motor Geoapify Gratuito Activo:</b> Sumando comercios extra en cada búsqueda.";
+        } else {
+            localStorage.removeItem("omnilocal_geoapify_key");
+            document.getElementById("geoapifyStatus").innerHTML = "🆓 <b>Ampliador gratuito sin tarjeta (Geoapify):</b> Opcional para sumar aún más comercios a la lista";
+        }
+    }
+
     function cambiarVistaMapa(modo) {
         const mapEl = document.getElementById("mapContainer");
         const btnArea = document.getElementById("btnSearchArea");
         const gmapsEl = document.getElementById("gmapsFrameContainer");
-        const bRuta = document.getElementById("tabBtnRuta");
-        const bGmaps = document.getElementById("tabBtnGmaps");
 
-        bRuta.classList.remove("active");
-        bGmaps.classList.remove("active");
+        ["tabBtnCalles", "tabBtnEarth", "tabBtnGmaps", "tabBtnAmbos"].forEach(id => {
+            document.getElementById(id).classList.remove("active");
+        });
 
-        if (modo === "ruta") {
+        if (modo === "calles") {
             mapEl.style.display = "block";
             btnArea.style.display = "block";
             gmapsEl.style.display = "none";
-            bRuta.classList.add("active");
-            if (mapa) setTimeout(() => mapa.invalidateSize(), 100);
+            document.getElementById("tabBtnCalles").classList.add("active");
+            if (mapa) {
+                mapa.removeLayer(capaBaseSatelite);
+                mapa.removeLayer(capaEtiquetasSatelite);
+                capaBaseCalles.addTo(mapa);
+                setTimeout(() => mapa.invalidateSize(), 100);
+            }
+        } else if (modo === "earth") {
+            mapEl.style.display = "block";
+            btnArea.style.display = "block";
+            gmapsEl.style.display = "none";
+            document.getElementById("tabBtnEarth").classList.add("active");
+            if (mapa) {
+                mapa.removeLayer(capaBaseCalles);
+                capaBaseSatelite.addTo(mapa);
+                capaEtiquetasSatelite.addTo(mapa);
+                setTimeout(() => mapa.invalidateSize(), 100);
+            }
         } else if (modo === "gmaps") {
             mapEl.style.display = "none";
             btnArea.style.display = "none";
             gmapsEl.style.display = "block";
-            bGmaps.classList.add("active");
+            document.getElementById("tabBtnGmaps").classList.add("active");
             actualizarIframeGoogleMaps(document.getElementById("queryInput").value.trim() || "negocios");
         } else {
             mapEl.style.display = "block";
             btnArea.style.display = "block";
             gmapsEl.style.display = "block";
-            bRuta.classList.add("active");
-            bGmaps.classList.add("active");
-            if (mapa) setTimeout(() => mapa.invalidateSize(), 100);
+            document.getElementById("tabBtnAmbos").classList.add("active");
+            if (mapa) {
+                mapa.removeLayer(capaBaseCalles);
+                capaBaseSatelite.addTo(mapa);
+                capaEtiquetasSatelite.addTo(mapa);
+                setTimeout(() => mapa.invalidateSize(), 100);
+            }
             actualizarIframeGoogleMaps(document.getElementById("queryInput").value.trim() || "negocios");
         }
     }
@@ -262,9 +325,20 @@
 
     function iniciarMapa() {
         mapa = L.map('mapContainer', { worldCopyJump: true }).setView([20.535, -100.435], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+        capaBaseCalles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
-        }).addTo(mapa);
+        });
+
+        capaBaseSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri Earth Satellite'
+        });
+
+        capaEtiquetasSatelite = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Etiquetas'
+        });
+
+        capaBaseCalles.addTo(mapa);
         capaTiendas = L.layerGroup().addTo(mapa);
         capaRuta = L.layerGroup().addTo(mapa);
 
@@ -423,7 +497,6 @@
         return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
     }
 
-    // Traductor universal de español a etiquetas internacionales OSM / Photon / Nominatim
     function expandirTerminosUniversales(queryRaw) {
         const qNorm = queryRaw.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const palabras = qNorm.split(/\s+/).filter(Boolean);
@@ -516,7 +589,6 @@
         return { rating, resenas, precioPromedio, comentario };
     }
 
-    // Consulta Overpass en anillos concéntricos para garantizar que NUNCA se salte locales de tu colonia
     async function consultarAnilloOverpass(lat, lon, radioMetros, regexOSM, limite) {
         const consulta = `[out:json][timeout:8];(
             nwr["name"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
@@ -592,15 +664,15 @@
             });
         };
 
-        // ANILLO 1 (0 a 3 km): Todos los locales de tu cuadra y colonia sin límite
+        // ANILLO 1 (0 a 3 km): Todos los locales de tu cuadra y colonia
         const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 3000, exp.regexOSM, 200)
             .then(procesarElementosOSM);
 
-        // ANILLO 2 (0 a 15 km): Toda tu ciudad / zona metropolitana
+        // ANILLO 2 (0 a 15 km): Toda tu ciudad
         const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 15000, exp.regexOSM, 150)
             .then(procesarElementosOSM);
 
-        // ANILLO 3 (Photon Local alrededor de tu GPS con todos los sinónimos)
+        // ANILLO 3: Photon Local
         const pPhotonLocal = Promise.allSettled(exp.listaPhoton.map(termino =>
             fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(termino)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=30`, {}, 4500)
                 .then(r => r.json())
@@ -624,7 +696,7 @@
                 }).catch(() => {})
         ));
 
-        // ANILLO 4 (Nominatim Cercano en viewbox de tu ciudad para capturar comercios que Photon omita)
+        // ANILLO 4: Nominatim Cercano en tu ciudad
         const delta = 0.15;
         const viewbox = `${centroBusquedaLon - delta},${centroBusquedaLat + delta},${centroBusquedaLon + delta},${centroBusquedaLat - delta}`;
         const pNominatimCerca = fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryRaw)}&viewbox=${viewbox}&bounded=1&limit=30&addressdetails=1`, {}, 4500)
@@ -645,7 +717,29 @@
                 });
             }).catch(() => {});
 
-        // ANILLO 5 (Todo el mundo sin límite de km, si está activo el modo global)
+        // ANILLO 5: Geoapify Gratuito (si el usuario activó su clave gratuita)
+        const pGeoapify = geoapifyKey
+            ? fetchRapido(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(queryRaw)}&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=30&apiKey=${encodeURIComponent(geoapifyKey)}`, {}, 4500)
+                .then(r => r.json())
+                .then(data => {
+                    (data.features || []).forEach(f => {
+                        const p = f.properties || {};
+                        if (p.name && p.lat && p.lon) {
+                            const evalData = evaluarCalidadYPrecio(p.name, p.category || "");
+                            agregar({
+                                nombre: p.name,
+                                giro: p.category || "Comercio",
+                                direccion: p.formatted || "Ubicación verificada",
+                                lat: p.lat,
+                                lon: p.lon,
+                                ...evalData
+                            });
+                        }
+                    });
+                }).catch(() => {})
+            : Promise.resolve();
+
+        // ANILLO 6: Todo el mundo sin límite de km
         const pMundial = (modoAlcance === "cerca_y_mundo")
             ? fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(exp.listaPhoton[0])}&limit=30`, {}, 4500)
                 .then(r => r.json())
@@ -669,9 +763,8 @@
                 }).catch(() => {})
             : Promise.resolve();
 
-        await Promise.allSettled([pAnillo1, pAnillo2, pPhotonLocal, pNominatimCerca, pMundial]);
+        await Promise.allSettled([pAnillo1, pAnillo2, pPhotonLocal, pNominatimCerca, pGeoapify, pMundial]);
 
-        // Ordena estrictamente de menor a mayor distancia ANTES de calcular rutas por calle
         const lista = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
         await calcularRutasRealesPorCalle(origenLat, origenLon, lista);
         return lista.sort((a, b) => a.distancia - b.distancia);
@@ -826,7 +919,9 @@
             container.appendChild(cardEl);
 
             document.getElementById(`btn-ruta-${rank}`).onclick = () => {
-                cambiarVistaMapa("ruta");
+                if (document.getElementById("mapContainer").style.display === "none") {
+                    cambiarVistaMapa("calles");
+                }
                 trazarCaminoEnMapa(op, rank);
                 document.getElementById("mapContainer").scrollIntoView({ behavior: "smooth", block: "center" });
             };
@@ -838,7 +933,6 @@
             };
         });
 
-        // Traza automáticamente el camino hacia el #1 (el más cercano real a tu GPS)
         if (tiendas.length > 0) {
             trazarCaminoEnMapa(tiendas[0], 1);
         }
