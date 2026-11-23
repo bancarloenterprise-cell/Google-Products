@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Global - Buscador Inteligente por Cercanía, Reseñas y Precio</title>
+    <title>OmniLocal Global - Locales Reales y Precios Reales Publicados</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -61,8 +61,30 @@
             align-items: center; flex-wrap: wrap; gap: 8px;
         }
 
+        .real-prices-strip {
+            background: white; border: 1px solid #dadce0; border-radius: 14px; padding: 14px;
+            margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .real-prices-strip h3 {
+            margin: 0 0 10px; font-size: 14px; color: #188038; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+        }
+        .real-products-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px;
+        }
+        .real-prod-card {
+            border: 1px solid #e0e0e0; border-radius: 10px; padding: 10px; background: #fafafa;
+            display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
+        }
+        .real-prod-card img { width: 100%; height: 110px; object-fit: contain; background: white; border-radius: 6px; }
+        .real-prod-title { font-size: 12.5px; font-weight: 700; color: #202124; line-height: 1.3; }
+        .real-prod-price { font-size: 15px; font-weight: 800; color: #188038; }
+        .real-prod-link {
+            display: inline-block; text-align: center; background: #1a73e8; color: white; text-decoration: none;
+            padding: 6px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700;
+        }
+
         .summary-dashboard {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 14px;
         }
         .summary-box {
             background: white; border-radius: 12px; padding: 12px 14px; border: 1px solid #dadce0;
@@ -71,7 +93,6 @@
         .summary-box small { display: block; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase; }
         .summary-box strong { display: block; font-size: 14px; color: #202124; margin: 3px 0; }
         .summary-box span { font-size: 12.5px; font-weight: 700; color: var(--green); }
-        .summary-box.bad-box span { color: var(--red); }
 
         .section-divider {
             font-size: 13px; font-weight: 700; color: #5f6368; margin: 18px 4px 10px;
@@ -89,7 +110,6 @@
         }
         .card.winner { border-left-color: #fbbc04; background: #fffdf5; box-shadow: 0 3px 12px rgba(251, 188, 4, 0.22); }
         .card.top3 { border-left-color: #1a73e8; background: #fafcff; }
-        .card.low-rated { border-left-color: #d93025; background: #fff9f9; }
 
         .rank-num {
             display: inline-block; background: #202124; color: white; font-size: 12px; font-weight: 800;
@@ -97,29 +117,24 @@
         }
         .card.winner .rank-num { background: #b06000; }
         .card.top3 .rank-num { background: #1a73e8; }
-        .card.low-rated .rank-num { background: #d93025; }
 
         .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; align-items: center; }
         .badge { padding: 4px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1967d2; }
         .badge.gold { background: #fef7e0; color: var(--gold); }
         .badge.green { background: #e6f4ea; color: var(--green); }
-        .badge.red { background: #fce8e6; color: var(--red); }
 
         .store-banner {
             font-size: 1.15rem; font-weight: 800; color: #202124; margin: 4px 0 2px;
-            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
-        .price-tag { font-size: 1.2rem; font-weight: 800; color: var(--green); white-space: nowrap; }
-        .rating-box {
-            display: inline-flex; align-items: center; gap: 6px; background: #f8f9fa;
-            border: 1px solid #e0e0e0; padding: 4px 10px; border-radius: 8px; margin-top: 6px; font-size: 12px;
-        }
-        .stars { color: #f59e0b; font-weight: 800; }
-        .stars.bad { color: #d93025; }
-        .meta { margin-top: 8px; font-size: 0.9rem; color: #4d5156; line-height: 1.6; }
+        .price-real-badge { font-size: 0.92rem; font-weight: 800; color: var(--green); background: #e6f4ea; padding: 5px 10px; border-radius: 8px; }
+        .price-unlisted-badge { font-size: 0.85rem; font-weight: 700; color: #5f6368; background: #f1f3f4; padding: 5px 10px; border-radius: 8px; }
+
+        .meta { margin-top: 8px; font-size: 0.9rem; color: #4d5156; line-height: 1.65; }
         .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-focus { background: #1a73e8; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .btn-gmaps { text-decoration: none; background: #188038; color: white; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+        .btn-catalog { text-decoration: none; background: #b06000; color: white; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
         .btn-reviews { text-decoration: none; background: #f1f3f4; color: #202124; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
 
         @keyframes pulseGPS {
@@ -138,7 +153,7 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">Ordenado por: 1° Cercanía • 2° Mejores Reseñas • 3° Mejor Precio</div>
+        <div class="subtitle">Locales Reales sin Datos Inventados • Precios Reales Publicados • 1° Cercanía • 2° Reseñas • 3° Precio</div>
     </header>
 
     <div class="gps-bar">
@@ -155,19 +170,19 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="queryInput" placeholder="Busca cualquier producto o negocio: camisas, zapatos, tacos, farmacia, taller..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
+        <input type="text" id="queryInput" placeholder="Escribe cualquier objeto, producto o servicio: camisas, paletas, llaves, bujías, pan..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
         <button onclick="buscarTodo(false)">Buscar</button>
     </div>
 
     <div class="quick-tags">
-        <button class="chip" onclick="buscarRapido('camisas')">👔 Camisas / Ropa</button>
-        <button class="chip" onclick="buscarRapido('zapateria')">👠 Zapatería / Tacón</button>
-        <button class="chip" onclick="buscarRapido('hamburguesas')">🍔 Hamburguesas</button>
-        <button class="chip" onclick="buscarRapido('tacos')">🌮 Tacos</button>
-        <button class="chip" onclick="buscarRapido('farmacia')">💊 Farmacia</button>
-        <button class="chip" onclick="buscarRapido('supermercado')">🛒 Supermercado</button>
-        <button class="chip" onclick="buscarRapido('taller')">🔧 Taller</button>
-        <button class="chip" onclick="buscarRapido('hotel')">🏨 Hotel</button>
+        <button class="chip" onclick="buscarRapido('paletas')">🍦 Paletas</button>
+        <button class="chip" onclick="buscarRapido('camisas')">👔 Camisas</button>
+        <button class="chip" onclick="buscarRapido('llaves')">🔑 Cerrajería / Llaves</button>
+        <button class="chip" onclick="buscarRapido('pan')">🥖 Panadería</button>
+        <button class="chip" onclick="buscarRapido('carne')">🥩 Carnicería</button>
+        <button class="chip" onclick="buscarRapido('lavanderia')">🧺 Lavandería</button>
+        <button class="chip" onclick="buscarRapido('celulares')">📱 Celulares</button>
+        <button class="chip" onclick="buscarRapido('bujias')">⚙️ Refacciones</button>
     </div>
 
     <div class="map-wrapper">
@@ -182,12 +197,11 @@
 
     <div id="routeBanner" class="route-banner"></div>
 
-    <div id="loader" class="loader">🌍 Buscando locales reales que vendan lo que pediste y ordenando por cercanía, reseñas y precio... (<span id="timerSec">0</span>s)</div>
+    <div id="loader" class="loader">🌍 Consultando locales reales y precios reales publicados... (<span id="timerSec">0</span>s)</div>
     <div id="results"></div>
 </div>
 
 <script>
-    // API Key predeterminada integrada
     const GEOAPIFY_API_KEY = "43fc5bdb2a034964a8fb510d53723ef3";
 
     let userLat = null;
@@ -393,169 +407,244 @@
         return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
     }
 
-    // Mapeo estricto de productos y servicios a comercios reales (evita hoteles o lugares ajenos)
+    function normalizarTexto(str) {
+        return (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    const CATALOGO_UNIVERSAL = [
+        {
+            palabras: ["paleta", "paletas", "paleteria", "helado", "helados", "heladeria", "nieve", "nieves", "neveria", "michoacana", "raspado", "bolis"],
+            osm: ["ice_cream", "paleteria", "neveria", "heladeria", "michoacana", "helados", "paletas", "nieves", "frozen_yogurt", "dairy queen", "nutrisa", "santa clara"],
+            shopOSM: "ice_cream|confectionery|frozen_food",
+            amenityOSM: "ice_cream",
+            photon: ["paleteria", "neveria", "heladeria", "la michoacana"],
+            geo: "catering.ice_cream",
+            validas: ["paleta", "neveria", "helad", "nieve", "michoacana", "ice_cream", "confectionery", "nutrisa", "dairy queen", "santa clara"],
+            excluir: /pizza|dominos|burger|taco|hotel|motel|car_repair|pharmacy/i
+        },
+        {
+            palabras: ["dulce", "dulces", "dulceria", "chocolate", "chocolates", "chocolateria", "caramelo", "gomitas", "botana", "pinata"],
+            osm: ["confectionery", "chocolate", "dulceria", "dulces", "chocolateria", "botanas", "pinatas"],
+            shopOSM: "confectionery|chocolate|pastry|party",
+            photon: ["dulceria", "tienda de dulces", "chocolateria"],
+            geo: "commercial.food_and_drink.confectionery,commercial.food_and_drink.chocolate",
+            validas: ["dulce", "confectionery", "chocolate", "caramelo", "botana", "pinata"],
+            excluir: /pizza|dominos|hotel|car_repair/i
+        },
+        {
+            palabras: ["pan", "panes", "panaderia", "pastel", "pasteles", "pasteleria", "reposteria", "bolillo", "concha", "dona", "donas", "galleta"],
+            osm: ["bakery", "pastry", "panaderia", "pasteleria", "reposteria", "donas", "esperanza", "leceroz", "globo", "krispy kreme"],
+            shopOSM: "bakery|pastry|confectionery",
+            photon: ["panaderia", "pasteleria"],
+            geo: "commercial.food_and_drink.bakery",
+            validas: ["bakery", "pastry", "panader", "pasteler", "reposter", "dona", "esperanza", "globo"]
+        },
+        {
+            palabras: ["carne", "carnes", "carniceria", "bistec", "arrachera", "costilla", "chuleta", "chorizo", "res", "cerdo", "pollo", "polleria", "pescado", "pescaderia", "mariscos"],
+            osm: ["butcher", "seafood", "carniceria", "polleria", "pescaderia", "mariscos", "sukarne", "bachoco"],
+            shopOSM: "butcher|seafood|poultry|deli",
+            photon: ["carniceria", "polleria", "pescaderia"],
+            geo: "commercial.food_and_drink.butcher,commercial.food_and_drink.seafood",
+            validas: ["butcher", "seafood", "carnicer", "poller", "pescader", "marisc", "sukarne", "bachoco"]
+        },
+        {
+            palabras: ["fruta", "frutas", "verdura", "verduras", "fruteria", "verduleria", "mercado", "tianguis", "tortilla", "tortillas", "tortilleria"],
+            osm: ["greengrocer", "marketplace", "fruteria", "verduleria", "mercado", "tortilleria"],
+            shopOSM: "greengrocer|farm|bakery|convenience",
+            amenityOSM: "marketplace",
+            photon: ["fruteria", "mercado", "tortilleria"],
+            geo: "commercial.food_and_drink.fruit_and_vegetable,commercial.marketplace",
+            validas: ["greengrocer", "marketplace", "fruter", "verduler", "mercado", "tortill"]
+        },
+        {
+            palabras: ["super", "supermercado", "abarrotes", "despensa", "tienda", "oxxo", "walmart", "soriana", "chedraui", "heb", "aurrera", "costco", "sams"],
+            osm: ["supermarket", "convenience", "grocery", "department_store", "abarrotes", "oxxo", "walmart", "soriana", "chedraui", "aurrera", "costco", "sams", "asturiano"],
+            shopOSM: "supermarket|convenience|grocery|department_store",
+            photon: ["supermercado", "tienda de abarrotes", "oxxo"],
+            geo: "commercial.supermarket,commercial.convenience",
+            validas: ["supermarket", "convenience", "grocery", "abarrotes", "oxxo", "walmart", "soriana", "chedraui", "aurrera", "asturiano"]
+        },
+        {
+            palabras: ["hamburguesa", "hamburguesas", "burger", "burgers", "hot dog"],
+            osm: ["burger", "hamburguesa", "burgers", "fast_food", "carls", "mcdonald", "burger king"],
+            amenityOSM: "restaurant|fast_food",
+            photon: ["hamburguesas", "burger"],
+            geo: "catering.fast_food.burger,catering.fast_food",
+            validas: ["burger", "hamburgues", "fast_food", "carls", "mcdonald"],
+            excluir: /pizza|dominos|hotel|ice_cream/i
+        },
+        {
+            palabras: ["taco", "tacos", "taqueria", "pastor", "birria", "barbacoa", "carnitas", "quesadillas", "gorditas"],
+            osm: ["taco", "taqueria", "birria", "barbacoa", "carnitas", "mexican", "quesadillas", "gorditas"],
+            amenityOSM: "restaurant|fast_food",
+            photon: ["taqueria", "tacos"],
+            geo: "catering.restaurant.mexican,catering.restaurant",
+            validas: ["taco", "taquer", "birria", "barbacoa", "carnitas", "mexican", "quesadilla", "gordita", "restaurant"],
+            excluir: /pizza|dominos|hotel|ice_cream/i
+        },
+        {
+            palabras: ["pizza", "pizzas", "pizzeria", "pasta", "espagueti"],
+            osm: ["pizza", "pizzeria", "italian", "dominos", "little caesars", "pizza hut"],
+            amenityOSM: "restaurant|fast_food",
+            photon: ["pizzeria", "pizza"],
+            geo: "catering.restaurant.pizza,catering.fast_food.pizza",
+            validas: ["pizza", "dominos", "caesar", "italian"]
+        },
+        {
+            palabras: ["cafe", "cafes", "cafeteria", "coffee", "restaurante", "comida", "fonda", "sushi", "alitas"],
+            osm: ["cafe", "coffee", "restaurant", "fast_food", "sushi", "alitas", "starbucks"],
+            amenityOSM: "cafe|restaurant|fast_food|food_court",
+            photon: ["cafeteria", "restaurante"],
+            geo: "catering.cafe,catering.restaurant",
+            validas: ["cafe", "coffee", "restaurant", "fast_food", "sushi", "alita", "starbucks", "catering"]
+        },
+        {
+            palabras: ["camisa", "camisas", "playera", "playeras", "blusa", "pantalon", "jeans", "vestido", "saco", "traje", "ropa", "boutique", "moda", "sastreria", "sueter", "chamarra", "uniforme"],
+            osm: ["clothes", "fashion", "boutique", "department_store", "tailor", "ropa", "suburbia", "liverpool", "coppel", "zara", "bershka", "pull", "c&a", "carey", "aldo conti", "mens fashion", "h&m"],
+            shopOSM: "clothes|fashion|boutique|department_store|tailor|fabric",
+            photon: ["tienda de ropa", "boutique", "tienda departamental"],
+            geo: "commercial.clothing,commercial.department_store,commercial.shopping_mall",
+            validas: ["cloth", "fashion", "boutique", "ropa", "camisa", "department_store", "tailor", "suburbia", "liverpool", "coppel", "zara"]
+        },
+        {
+            palabras: ["tacon", "tacones", "zapato", "zapatos", "zapatilla", "calzado", "zapateria", "bota", "tenis", "sandalia"],
+            osm: ["shoes", "zapateria", "calzado", "zapatos", "department_store", "flexi", "andrea", "price shoes", "bhermanos", "nike", "adidas"],
+            shopOSM: "shoes|department_store|boutique|sports",
+            photon: ["zapateria", "tienda de calzado"],
+            geo: "commercial.clothing.shoes,commercial.department_store",
+            validas: ["shoe", "zapater", "calzad", "flexi", "andrea", "tenis", "nike", "adidas", "department_store"]
+        },
+        {
+            palabras: ["farmacia", "medicina", "medicamento", "pastilla", "botica", "dentista", "hospital", "clinica", "doctor", "medico", "laboratorio", "veterinaria", "mascota", "croquetas", "optica", "lentes"],
+            osm: ["pharmacy", "chemist", "dentist", "hospital", "clinic", "doctors", "veterinary", "optician", "farmacia", "guadalajara", "benavides", "similares", "ahorro", "chopo", "salud digna", "devlyn"],
+            shopOSM: "chemist|medical_supply|pet|optician",
+            amenityOSM: "pharmacy|dentist|hospital|clinic|doctors|veterinary",
+            photon: ["farmacia", "clinica", "dentista", "veterinaria", "optica"],
+            geo: "healthcare,pet",
+            validas: ["pharmac", "chemist", "farmacia", "dentist", "hospital", "clinic", "doctor", "medic", "veterinar", "optica", "healthcare"]
+        },
+        {
+            palabras: ["ferreteria", "tlapaleria", "herramienta", "taladro", "martillo", "tornillo", "tornillos", "cemento", "pintura", "llave", "llaves", "cerrajeria", "cerrajero", "mueble", "muebles", "muebleria", "colchon"],
+            osm: ["hardware", "doityourself", "paint", "locksmith", "furniture", "bed", "ferreteria", "tlapaleria", "cerrajeria", "muebleria", "home depot", "comex", "dico"],
+            shopOSM: "hardware|doityourself|paint|locksmith|furniture|bed",
+            craftOSM: "locksmith",
+            photon: ["ferreteria", "cerrajeria", "muebleria"],
+            geo: "commercial.hardware_and_tools,commercial.furniture_and_interior,service.locksmith",
+            validas: ["hardware", "doityourself", "paint", "ferreter", "tlapaler", "locksmith", "cerrajer", "furniture", "muebler", "home depot", "comex"]
+        },
+        {
+            palabras: ["celular", "celulares", "telefono", "iphone", "samsung", "cargador", "audifonos", "computadora", "laptop", "impresora", "papeleria", "copias", "libro", "libros", "libreria"],
+            osm: ["mobile_phone", "electronics", "computer", "stationery", "copyshop", "books", "celulares", "telcel", "papeleria", "libreria", "office depot", "gandhi"],
+            shopOSM: "mobile_phone|electronics|computer|stationery|copyshop|books",
+            photon: ["tienda de celulares", "papeleria", "libreria"],
+            geo: "commercial.elektronics,commercial.stationery,commercial.books",
+            validas: ["mobile", "phone", "celular", "electronic", "computer", "stationery", "copyshop", "papeler", "book", "librer", "telcel"]
+        },
+        {
+            palabras: ["taller", "mecanico", "llanta", "llantas", "llantera", "refaccion", "refacciones", "refaccionaria", "bujia", "bujias", "bateria", "aceite", "gasolina", "gasolinera", "autolavado"],
+            osm: ["car_repair", "tyres", "car_parts", "fuel", "car_wash", "taller", "llantera", "refaccionaria", "autozone", "pemex", "autolavado"],
+            shopOSM: "car_repair|tyres|car_parts",
+            amenityOSM: "fuel|car_wash",
+            photon: ["taller mecanico", "llantera", "refaccionaria", "gasolinera"],
+            geo: "service.vehicle,commercial.vehicle",
+            validas: ["car_repair", "tyre", "car_part", "fuel", "car_wash", "taller", "llanter", "refaccion", "autozone", "pemex", "vehicle"]
+        },
+        {
+            palabras: ["lavanderia", "tintoreria", "estetica", "barberia", "peluqueria", "gimnasio", "gym", "flor", "flores", "floreria", "juguete", "juguetes", "bicicleta", "banco", "cajero", "paqueteria", "hotel", "motel"],
+            osm: ["laundry", "dry_cleaning", "hairdresser", "beauty", "barber", "fitness_centre", "florist", "toys", "bicycle", "bank", "atm", "post_office", "hotel", "motel"],
+            shopOSM: "laundry|dry_cleaning|hairdresser|beauty|florist|toys|bicycle",
+            amenityOSM: "bank|atm|post_office",
+            leisureOSM: "fitness_centre|sports_centre",
+            tourismOSM: "hotel|motel|hostel",
+            photon: ["lavanderia", "estetica", "gimnasio", "floreria", "banco", "hotel"],
+            geo: "service.cleaning.laundry,service.beauty,sport.fitness,commercial.florist,commercial.toy_and_game,service.financial,service.post,accommodation",
+            excluir: /grave_yard|cemetery/i,
+            validas: ["laundry", "dry_cleaning", "hair", "beauty", "barber", "fitness", "gym", "flor", "toy", "bicycle", "bank", "atm", "post", "hotel", "motel"]
+        }
+    ];
+
     function interpretarIntencionComercial(queryRaw) {
-        const qNorm = queryRaw.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const qNorm = normalizarTexto(queryRaw.trim());
         const palabras = qNorm.split(/\s+/).filter(Boolean);
         const setOSM = new Set();
-        const terminosPhoton = new Set();
+        const terminosPhoton = new Set([queryRaw.trim()]);
         let categoriaGeoapify = "";
         let filtroShopOSM = "";
         let filtroAmenityOSM = "";
-        let excluirGirosRegex = /hotel|motel|hostel|guest_house|apartment|residential|house|parking|fuel|grave_yard|cemetery/i;
-        let precioBase = 160;
-        let precioRango = 250;
+        let filtroCraftOSM = "";
+        let filtroLeisureOSM = "";
+        let filtroTourismOSM = "";
+        let excluirGirosRegex = /hotel|motel|hostel|guest_house|apartment|residential|house|parking|grave_yard|cemetery/i;
+        let palabrasClaveValidadas = new Set();
 
-        const reglas = [
-            {
-                match: /camisa|playera|blusa|pantalon|jeans|vestido|saco|traje|ropa|boutique|moda|sastreria|sueter|chamarra|playeras|camisas/,
-                osm: ["clothes", "fashion", "boutique", "department_store", "tailor", "ropa", "boutique", "suburbia", "liverpool", "coppel", "zara", "bershka", "pull", "c&a", "carey", "aldo conti", "mens fashion"],
-                shopOSM: "clothes|fashion|boutique|department_store|tailor|fabric",
-                photon: ["tienda de ropa", "boutique", "tienda departamental"],
-                geo: "commercial.clothing,commercial.department_store,commercial.shopping_mall",
-                precioBase: 280, precioRango: 550
-            },
-            {
-                match: /tacon|tacones|zapato|zapatos|zapatilla|calzado|zapateria|bota|tenis|sandalia/,
-                osm: ["shoes", "zapateria", "calzado", "zapatos", "department_store", "flexi", "andrea", "price shoes", "bhermanos", "zapaterias"],
-                shopOSM: "shoes|department_store|boutique",
-                photon: ["zapateria", "tienda de calzado"],
-                geo: "commercial.clothing.shoes,commercial.department_store,commercial.shopping_mall",
-                precioBase: 420, precioRango: 780
-            },
-            {
-                match: /hamburguesa|hamburguesas|burger|burgers/,
-                osm: ["burger", "hamburguesa", "burgers", "fast_food", "carls", "mcdonald", "burger king"],
-                amenityOSM: "restaurant|fast_food",
-                photon: ["hamburguesas", "burger"],
-                geo: "catering.fast_food,catering.restaurant",
-                precioBase: 95, precioRango: 130
-            },
-            {
-                match: /taco|tacos|taqueria|pastor|birria|barbacoa|carnitas/,
-                osm: ["taco", "taqueria", "birria", "barbacoa", "carnitas", "mexican"],
-                amenityOSM: "restaurant|fast_food",
-                photon: ["taqueria", "tacos"],
-                geo: "catering.restaurant,catering.fast_food",
-                precioBase: 65, precioRango: 95
-            },
-            {
-                match: /pizza|pizzas|pizzeria/,
-                osm: ["pizza", "pizzeria", "italian", "dominos", "little caesars", "pizza hut"],
-                amenityOSM: "restaurant|fast_food",
-                photon: ["pizzeria", "pizza"],
-                geo: "catering.restaurant,catering.fast_food",
-                precioBase: 140, precioRango: 190
-            },
-            {
-                match: /restaurante|comida|comer|fonda|cocina|mariscos|sushi|pollo|alitas/,
-                osm: ["restaurant", "fast_food", "food_court", "restaurante", "cocina", "fonda", "mariscos", "sushi", "alitas"],
-                amenityOSM: "restaurant|fast_food|cafe|food_court",
-                photon: ["restaurante"],
-                geo: "catering.restaurant,catering.fast_food",
-                precioBase: 110, precioRango: 220
-            },
-            {
-                match: /cafe|cafeteria|coffee|postre|pastel|pan|panaderia|pasteleria/,
-                osm: ["cafe", "coffee", "cafeteria", "bakery", "pastry", "panaderia", "pasteleria", "starbucks"],
-                shopOSM: "bakery|pastry|coffee|confectionery",
-                amenityOSM: "cafe",
-                photon: ["cafeteria", "panaderia", "pasteleria"],
-                geo: "catering.cafe,commercial.food_and_drink.bakery",
-                precioBase: 55, precioRango: 110
-            },
-            {
-                match: /farmacia|medicina|medicamento|pastilla|botica/,
-                osm: ["pharmacy", "chemist", "farmacia", "guadalajara", "benavides", "similares", "ahorro"],
-                shopOSM: "chemist|medical_supply",
-                amenityOSM: "pharmacy",
-                photon: ["farmacia"],
-                geo: "healthcare.pharmacy",
-                precioBase: 90, precioRango: 280
-            },
-            {
-                match: /hospital|clinica|doctor|medico|consultorio|dentista|laboratorio/,
-                osm: ["hospital", "clinic", "doctors", "dentist", "clinica", "hospital", "laboratorio"],
-                amenityOSM: "hospital|clinic|doctors|dentist",
-                photon: ["clinica", "hospital", "consultorio medico"],
-                geo: "healthcare.hospital,healthcare.clinic_or_praxis,healthcare.dentist",
-                precioBase: 350, precioRango: 650
-            },
-            {
-                match: /super|supermercado|abarrotes|despensa|oxxo|walmart|soriana|chedraui|heb/,
-                osm: ["supermarket", "convenience", "grocery", "department_store", "abarrotes", "oxxo", "walmart", "soriana", "chedraui"],
-                shopOSM: "supermarket|convenience|grocery|department_store",
-                photon: ["supermercado", "tienda de abarrotes"],
-                geo: "commercial.supermarket,commercial.convenience",
-                precioBase: 120, precioRango: 450
-            },
-            {
-                match: /ferreteria|tlapaleria|herramienta|taladro|tornillo|pintura|plomeria|electrico/,
-                osm: ["hardware", "doityourself", "paint", "ferreteria", "tlapaleria", "home depot", "truper"],
-                shopOSM: "hardware|doityourself|paint|trade",
-                photon: ["ferreteria", "tlapaleria"],
-                geo: "commercial.hardware_and_tools",
-                precioBase: 150, precioRango: 480
-            },
-            {
-                match: /taller|mecanico|llanta|llantera|refacciones|afinacion|frenos|auto/,
-                osm: ["car_repair", "tyres", "car_parts", "taller", "llantera", "refaccionaria"],
-                shopOSM: "car_repair|tyres|car_parts",
-                photon: ["taller mecanico", "llantera", "refaccionaria"],
-                geo: "service.vehicle",
-                precioBase: 450, precioRango: 1100
-            },
-            {
-                match: /celular|telefono|computadora|laptop|electronica|audifonos|cargador/,
-                osm: ["electronics", "mobile_phone", "computer", "electronica", "celulares", "telcel", "at&t"],
-                shopOSM: "electronics|mobile_phone|computer",
-                photon: ["tienda de electronica", "tienda de celulares"],
-                geo: "commercial.elektronics",
-                precioBase: 350, precioRango: 1500
-            },
-            {
-                match: /hotel|motel|hospedaje|hostal|cabana/,
-                osm: ["hotel", "motel", "hostel", "guest_house", "hotel", "motel"],
-                photon: ["hotel"],
-                geo: "accommodation.hotel,accommodation.motel",
-                excluirGirosRegex: /hospital|pharmacy|supermarket/i,
-                precioBase: 650, precioRango: 1200
+        palabras.forEach(p => {
+            const limpia = p.replace(/[^a-z0-9]/g, "");
+            if (limpia.length > 2) {
+                palabrasClaveValidadas.add(limpia);
+                if (limpia.endsWith("es") && limpia.length > 5) palabrasClaveValidadas.add(limpia.slice(0, -2));
+                else if (limpia.endsWith("s") && limpia.length > 4) palabrasClaveValidadas.add(limpia.slice(0, -1));
             }
-        ];
+        });
 
         let huboCoincidencia = false;
-        reglas.forEach(r => {
-            if (qNorm.match(r.match)) {
+        CATALOGO_UNIVERSAL.forEach(entrada => {
+            const match = entrada.palabras.some(kw => {
+                const kwNorm = normalizarTexto(kw);
+                return qNorm === kwNorm || qNorm.includes(kwNorm) || palabras.includes(kwNorm);
+            });
+            if (match) {
                 huboCoincidencia = true;
-                r.osm.forEach(t => setOSM.add(t));
-                r.photon.forEach(t => terminosPhoton.add(t));
-                if (r.shopOSM) filtroShopOSM = r.shopOSM;
-                if (r.amenityOSM) filtroAmenityOSM = r.amenityOSM;
-                if (r.geo) categoriaGeoapify = r.geo;
-                if (r.excluirGirosRegex) excluirGirosRegex = r.excluirGirosRegex;
-                precioBase = r.precioBase;
-                precioRango = r.precioRango;
+                entrada.osm.forEach(t => setOSM.add(t));
+                entrada.photon.forEach(t => terminosPhoton.add(t));
+                if (entrada.shopOSM) filtroShopOSM = filtroShopOSM ? `${filtroShopOSM}|${entrada.shopOSM}` : entrada.shopOSM;
+                if (entrada.amenityOSM) filtroAmenityOSM = filtroAmenityOSM ? `${filtroAmenityOSM}|${entrada.amenityOSM}` : entrada.amenityOSM;
+                if (entrada.craftOSM) filtroCraftOSM = filtroCraftOSM ? `${filtroCraftOSM}|${entrada.craftOSM}` : entrada.craftOSM;
+                if (entrada.leisureOSM) filtroLeisureOSM = filtroLeisureOSM ? `${filtroLeisureOSM}|${entrada.leisureOSM}` : entrada.leisureOSM;
+                if (entrada.tourismOSM) filtroTourismOSM = filtroTourismOSM ? `${filtroTourismOSM}|${entrada.tourismOSM}` : entrada.tourismOSM;
+                if (entrada.geo) categoriaGeoapify = categoriaGeoapify ? `${categoriaGeoapify},${entrada.geo}` : entrada.geo;
+                if (entrada.excluir) excluirGirosRegex = entrada.excluir;
+                if (entrada.validas) entrada.validas.forEach(v => palabrasClaveValidadas.add(v));
             }
         });
 
         if (!huboCoincidencia) {
-            palabras.map(p => p.replace(/[^a-z0-9]/g, "")).filter(p => p.length > 2).forEach(p => setOSM.add(p));
-            terminosPhoton.add(queryRaw.trim());
-            categoriaGeoapify = "commercial,catering,service,healthcare";
+            palabrasClaveValidadas.forEach(raiz => setOSM.add(raiz));
         }
 
         return {
             qNorm,
+            queryOriginal: queryRaw.trim(),
             regexOSM: Array.from(setOSM).join("|") || qNorm.replace(/[^a-z0-9]/g, ""),
             filtroShopOSM,
             filtroAmenityOSM,
+            filtroCraftOSM,
+            filtroLeisureOSM,
+            filtroTourismOSM,
             listaPhoton: Array.from(terminosPhoton),
             categoriaGeoapify,
             excluirGirosRegex,
-            precioBase,
-            precioRango,
-            huboCoincidencia
+            palabrasClaveValidadas: Array.from(palabrasClaveValidadas)
         };
+    }
+
+    // Consulta precios REALES publicados por vendedores en tiempo real (Mercado Libre API pública)
+    async function buscarPreciosRealesPublicados(queryRaw) {
+        try {
+            const url = `https://api.mercadolibre.com/sites/MLM/search?q=${encodeURIComponent(queryRaw)}&limit=4`;
+            const res = await fetchRapido(url, {}, 4000);
+            const data = await res.json();
+            if (data && data.results && data.results.length > 0) {
+                return data.results.map(item => ({
+                    titulo: item.title,
+                    precio: item.price,
+                    moneda: item.currency_id || "MXN",
+                    imagen: item.thumbnail,
+                    link: item.permalink,
+                    vendedor: (item.seller && item.seller.nickname) || "Tienda oficial / Vendedor"
+                }));
+            }
+        } catch (e) {}
+        return [];
     }
 
     async function calcularRutasRealesPorCalle(origenLat, origenLon, listaTiendas) {
@@ -588,34 +677,18 @@
         }));
     }
 
-    function evaluarCalidadYPrecio(nombre, intencion) {
-        let hash = 0;
-        for (let i = 0; i < nombre.length; i++) {
-            hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const h = Math.abs(hash);
-        const rating = Number((2.8 + ((h % 23) / 10)).toFixed(1));
-        const resenas = 18 + (h % 650);
-        const precioPromedio = intencion.precioBase + (h % intencion.precioRango);
-        let comentario = "Comercio verificado en mapa global";
-        if (rating < 3.4) comentario = "Reseñas mixtas/bajas: reportan demoras o surtido limitado";
-        else if (rating < 4.2) comentario = "Calificación promedio: buena opción por ubicación";
-        else comentario = "Excelentes reseñas y buen surtido en la zona";
-
-        return { rating, resenas, precioPromedio, comentario };
-    }
-
     async function consultarAnilloOverpass(lat, lon, radioMetros, intencion, limite) {
         let bloques = `
             nwr["name"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
             nwr["brand"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["cuisine"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["description"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
         `;
-        if (intencion.filtroShopOSM) {
-            bloques += `nwr["shop"~"${intencion.filtroShopOSM}",i](around:${radioMetros},${lat},${lon});`;
-        }
-        if (intencion.filtroAmenityOSM) {
-            bloques += `nwr["amenity"~"${intencion.filtroAmenityOSM}",i](around:${radioMetros},${lat},${lon});`;
-        }
+        if (intencion.filtroShopOSM) bloques += `nwr["shop"~"${intencion.filtroShopOSM}",i](around:${radioMetros},${lat},${lon});`;
+        if (intencion.filtroAmenityOSM) bloques += `nwr["amenity"~"${intencion.filtroAmenityOSM}",i](around:${radioMetros},${lat},${lon});`;
+        if (intencion.filtroCraftOSM) bloques += `nwr["craft"~"${intencion.filtroCraftOSM}",i](around:${radioMetros},${lat},${lon});`;
+        if (intencion.filtroLeisureOSM) bloques += `nwr["leisure"~"${intencion.filtroLeisureOSM}",i](around:${radioMetros},${lat},${lon});`;
+        if (intencion.filtroTourismOSM) bloques += `nwr["tourism"~"${intencion.filtroTourismOSM}",i](around:${radioMetros},${lat},${lon});`;
 
         const consulta = `[out:json][timeout:8];(${bloques});out center ${limite};`;
         const servidores = [
@@ -633,22 +706,17 @@
         return [];
     }
 
-    // Ordenamiento exacto pedido por el usuario:
-    // 1° Más cercano a ti -> 2° Mejores reseñas -> 3° Mejor precio
     function ordenarPorCercaniaResenasYPrecio(lista) {
         return lista.sort((a, b) => {
-            // Diferencia significativa de distancia (> 0.35 km): gana el más cercano
             const diffDist = a.distancia - b.distancia;
-            if (Math.abs(diffDist) > 0.35) {
-                return diffDist;
+            if (Math.abs(diffDist) > 0.35) return diffDist;
+            // Si tienen dato real de tarifa/precio publicado, prioriza el más económico
+            if (a.precioNumerico !== null && b.precioNumerico !== null) {
+                return a.precioNumerico - b.precioNumerico;
             }
-            // Si están prácticamente a la misma distancia: gana el de mejor calificación/reseñas
-            const diffRating = b.rating - a.rating;
-            if (Math.abs(diffRating) > 0.15) {
-                return diffRating;
-            }
-            // Si empatan en cercanía y reseñas: gana el de mejor precio (más barato)
-            return a.precioPromedio - b.precioPromedio;
+            if (a.precioNumerico !== null) return -1;
+            if (b.precioNumerico !== null) return 1;
+            return diffDist;
         });
     }
 
@@ -656,16 +724,20 @@
         const intencion = interpretarIntencionComercial(queryRaw);
         const unicos = new Map();
 
-        const agregar = (item) => {
+        const agregar = (item, vieneDeCategoriaExacta = false) => {
             if (!item.nombre || !item.lat || !item.lon) return;
-            const giroStr = `${item.giro || ""} ${item.nombre || ""}`;
-            // Filtra estrictamente giros que no tienen nada que ver (ej. hoteles cuando buscas camisas)
-            if (intencion.excluirGirosRegex && intencion.excluirGirosRegex.test(giroStr)) {
+            const textoCompleto = normalizarTexto(`${item.nombre} ${item.giro || ""} ${item.etiquetasExtra || ""}`);
+
+            if (intencion.excluirGirosRegex && intencion.excluirGirosRegex.test(textoCompleto)) {
                 return;
             }
-            // Evita resultados geográficos que no son comercios (ej. nombres de ciudades o municipios)
             if (/city|town|village|administrative|boundary|suburb|county|state/i.test(item.giro || "")) {
                 return;
+            }
+
+            if (!vieneDeCategoriaExacta) {
+                const coincide = intencion.palabrasClaveValidadas.some(palabra => textoCompleto.includes(palabra));
+                if (!coincide) return;
             }
 
             const distRecta = calcularDistanciaLineaRectaKm(origenLat, origenLon, item.lat, item.lon);
@@ -685,16 +757,16 @@
         const procesarElementosOSM = (elementos) => {
             elementos.forEach(el => {
                 if (el.tags && (el.tags.name || el.tags.brand)) {
-                    // Ignora elementos que solo sean calles, parques o edificios sin giro comercial
-                    if (!el.tags.shop && !el.tags.amenity && !el.tags.craft && !el.tags.office && !el.tags.tourism && !el.tags.brand) {
+                    if (!el.tags.shop && !el.tags.amenity && !el.tags.craft && !el.tags.office && !el.tags.tourism && !el.tags.leisure && !el.tags.healthcare && !el.tags.brand) {
                         return;
                     }
                     const tLat = el.lat || (el.center && el.center.lat);
                     const tLon = el.lon || (el.center && el.center.lon);
                     if (tLat && tLon) {
                         const nombre = el.tags.name || el.tags.brand;
-                        const giro = el.tags.shop || el.tags.cuisine || el.tags.amenity || el.tags.craft || el.tags.tourism || "Comercio";
-                        const evalData = evaluarCalidadYPrecio(nombre, intencion);
+                        const giro = el.tags.shop || el.tags.cuisine || el.tags.amenity || el.tags.craft || el.tags.leisure || el.tags.healthcare || el.tags.tourism || "Comercio";
+                        const tarifaReal = el.tags.charge || el.tags.fee || null;
+                        const numMatch = tarifaReal ? tarifaReal.match(/[\d.,]+/) : null;
                         const dirParts = [
                             el.tags["addr:street"],
                             el.tags["addr:housenumber"],
@@ -705,42 +777,75 @@
                         agregar({
                             nombre,
                             giro,
+                            etiquetasExtra: `${el.tags.description || ""} ${el.tags.brand || ""} ${el.tags.cuisine || ""}`,
                             direccion: dirParts.join(", ") || "Ubicación registrada en mapa",
+                            telefono: el.tags.phone || el.tags["contact:phone"] || null,
+                            horario: el.tags.opening_hours || null,
+                            sitioWeb: el.tags.website || el.tags["contact:website"] || null,
+                            precioRealTexto: tarifaReal,
+                            precioNumerico: numMatch ? parseFloat(numMatch[0].replace(",", "")) : null,
                             lat: tLat,
-                            lon: tLon,
-                            ...evalData
-                        });
+                            lon: tLon
+                        }, true);
                     }
                 }
             });
         };
 
-        // 1. Overpass Anillo 1 (0 a 3.5 km) y Anillo 2 (0 a 15 km)
-        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 3500, intencion, 200).then(procesarElementosOSM);
-        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 15000, intencion, 150).then(procesarElementosOSM);
+        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 4000, intencion, 200).then(procesarElementosOSM);
+        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 18000, intencion, 150).then(procesarElementosOSM);
 
-        // 2. Geoapify Places API v2 por categoría exacta (usando tu API Key predeterminada)
-        const pGeoapifyPlaces = fetchRapido(`https://api.geoapify.com/v2/places?categories=${encodeURIComponent(intencion.categoriaGeoapify)}&filter=circle:${centroBusquedaLon},${centroBusquedaLat},15000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=80&apiKey=${GEOAPIFY_API_KEY}`, {}, 5500)
+        const pGeoapifyPlaces = intencion.categoriaGeoapify
+            ? fetchRapido(`https://api.geoapify.com/v2/places?categories=${encodeURIComponent(intencion.categoriaGeoapify)}&filter=circle:${centroBusquedaLon},${centroBusquedaLat},18000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=80&apiKey=${GEOAPIFY_API_KEY}`, {}, 5500)
+                .then(r => r.json())
+                .then(data => {
+                    (data.features || []).forEach(f => {
+                        const p = f.properties || {};
+                        const raw = (p.datasource && p.datasource.raw) || {};
+                        if (p.name && p.lat && p.lon) {
+                            const tarifaReal = raw.charge || raw.fee || null;
+                            const numMatch = tarifaReal ? tarifaReal.match(/[\d.,]+/) : null;
+                            agregar({
+                                nombre: p.name,
+                                giro: (p.categories && p.categories[p.categories.length - 1]) || "Comercio",
+                                etiquetasExtra: (p.categories && p.categories.join(" ")) || "",
+                                direccion: p.formatted || "Ubicación verificada",
+                                telefono: raw.phone || raw["contact:phone"] || null,
+                                horario: raw.opening_hours || null,
+                                sitioWeb: p.website || raw.website || null,
+                                precioRealTexto: tarifaReal,
+                                precioNumerico: numMatch ? parseFloat(numMatch[0].replace(",", "")) : null,
+                                lat: p.lat,
+                                lon: p.lon
+                            }, true);
+                        }
+                    });
+                }).catch(() => {})
+            : Promise.resolve();
+
+        const pGeoapifyText = fetchRapido(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(intencion.queryOriginal)}&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=40&apiKey=${GEOAPIFY_API_KEY}`, {}, 5000)
             .then(r => r.json())
             .then(data => {
                 (data.features || []).forEach(f => {
                     const p = f.properties || {};
                     if (p.name && p.lat && p.lon) {
-                        const catStr = (p.categories && p.categories.join(", ")) || "Comercio";
-                        const evalData = evaluarCalidadYPrecio(p.name, intencion);
                         agregar({
                             nombre: p.name,
-                            giro: (p.categories && p.categories[p.categories.length - 1]) || "Comercio",
+                            giro: p.category || "Comercio",
+                            etiquetasExtra: p.category || "",
                             direccion: p.formatted || "Ubicación verificada",
+                            telefono: null,
+                            horario: null,
+                            sitioWeb: null,
+                            precioRealTexto: null,
+                            precioNumerico: null,
                             lat: p.lat,
-                            lon: p.lon,
-                            ...evalData
-                        });
+                            lon: p.lon
+                        }, false);
                     }
                 });
             }).catch(() => {});
 
-        // 3. Photon Local con los términos comerciales traducidos (ej. "tienda de ropa", "boutique", "tienda departamental")
         const pPhotonLocal = Promise.allSettled(intencion.listaPhoton.map(termino =>
             fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(termino)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=25`, {}, 4500)
                 .then(r => r.json())
@@ -749,43 +854,25 @@
                         const p = f.properties || {};
                         const c = f.geometry.coordinates;
                         if (p.name) {
-                            const evalData = evaluarCalidadYPrecio(p.name, intencion);
                             const dir = [p.street, p.district, p.city, p.state, p.country].filter(Boolean).join(", ");
                             agregar({
                                 nombre: p.name,
                                 giro: p.osm_value || "Establecimiento",
+                                etiquetasExtra: `${p.osm_key || ""} ${p.osm_value || ""}`,
                                 direccion: dir || "Ubicación en mapa",
+                                telefono: null,
+                                horario: null,
+                                sitioWeb: null,
+                                precioRealTexto: null,
+                                precioNumerico: null,
                                 lat: c[1],
-                                lon: c[0],
-                                ...evalData
-                            });
+                                lon: c[0]
+                            }, false);
                         }
                     });
                 }).catch(() => {})
         ));
 
-        // 4. Nominatim Cercano en tu ciudad
-        const delta = 0.15;
-        const viewbox = `${centroBusquedaLon - delta},${centroBusquedaLat + delta},${centroBusquedaLon + delta},${centroBusquedaLat - delta}`;
-        const pNominatimCerca = fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(intencion.listaPhoton[0])}&viewbox=${viewbox}&bounded=1&limit=25&addressdetails=1`, {}, 4500)
-            .then(r => r.json())
-            .then(data => {
-                (data || []).forEach(item => {
-                    if (item.name) {
-                        const evalData = evaluarCalidadYPrecio(item.name, intencion);
-                        agregar({
-                            nombre: item.name,
-                            giro: item.type || "Establecimiento",
-                            direccion: item.display_name || "Ubicación local",
-                            lat: parseFloat(item.lat),
-                            lon: parseFloat(item.lon),
-                            ...evalData
-                        });
-                    }
-                });
-            }).catch(() => {});
-
-        // 5. Todo el mundo (solo después de llenar tu ciudad, si está activo el modo global)
         const pMundial = (modoAlcance === "cerca_y_mundo")
             ? fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(intencion.listaPhoton[0])}&limit=20`, {}, 4500)
                 .then(r => r.json())
@@ -794,22 +881,26 @@
                         const p = f.properties || {};
                         const c = f.geometry.coordinates;
                         if (p.name) {
-                            const evalData = evaluarCalidadYPrecio(p.name, intencion);
                             const dir = [p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
                             agregar({
                                 nombre: p.name,
                                 giro: p.osm_value || "Establecimiento mundial",
+                                etiquetasExtra: `${p.osm_key || ""} ${p.osm_value || ""}`,
                                 direccion: dir || "Ubicación mundial",
+                                telefono: null,
+                                horario: null,
+                                sitioWeb: null,
+                                precioRealTexto: null,
+                                precioNumerico: null,
                                 lat: c[1],
-                                lon: c[0],
-                                ...evalData
-                            });
+                                lon: c[0]
+                            }, false);
                         }
                     });
                 }).catch(() => {})
             : Promise.resolve();
 
-        await Promise.allSettled([pAnillo1, pAnillo2, pGeoapifyPlaces, pPhotonLocal, pNominatimCerca, pMundial]);
+        await Promise.allSettled([pAnillo1, pAnillo2, pGeoapifyPlaces, pGeoapifyText, pPhotonLocal, pMundial]);
 
         const lista = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
         await calcularRutasRealesPorCalle(origenLat, origenLon, lista);
@@ -846,52 +937,63 @@
         timerSpan.innerText = "0";
         const intervalo = setInterval(() => { segundos++; timerSpan.innerText = segundos; }, 1000);
 
-        const tiendas = await buscarEnTodoElMundoPorCercaniaReal(
-            userLat, userLon, centroLat, centroLon, query, modoAlcance
-        );
+        const [tiendas, productosReales] = await Promise.all([
+            buscarEnTodoElMundoPorCercaniaReal(userLat, userLon, centroLat, centroLon, query, modoAlcance),
+            buscarPreciosRealesPublicados(query)
+        ]);
 
         clearInterval(intervalo);
         loader.style.display = "none";
 
+        // Bloque superior con precios REALES publicados en catálogo para ese producto
+        if (productosReales.length > 0) {
+            const itemsHTML = productosReales.map(prod => `
+                <div class="real-prod-card">
+                    <img src="${prod.imagen}" alt="${prod.titulo}">
+                    <div class="real-prod-title">${prod.titulo.slice(0, 62)}...</div>
+                    <div class="real-prod-price">$${Number(prod.precio).toLocaleString('es-MX')} ${prod.moneda}</div>
+                    <a href="${prod.link}" target="_blank" class="real-prod-link">Ver precio real en tienda</a>
+                </div>
+            `).join("");
+
+            container.innerHTML += `
+                <div class="real-prices-strip">
+                    <h3>
+                        <span>🏷️ PRECIOS REALES PUBLICADOS EN CATÁLOGO PARA "${query.toUpperCase()}"</span>
+                        <a href="https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}" target="_blank" style="font-size:12px; color:#1a73e8; text-decoration:none;">Comparar más precios reales →</a>
+                    </h3>
+                    <div class="real-products-grid">${itemsHTML}</div>
+                </div>
+            `;
+        }
+
         if (tiendas.length === 0) {
-            container.innerHTML = `
+            container.innerHTML += `
                 <div class="card">
                     <div style="font-weight:700; margin-bottom:6px;">No aparecieron locales registrados para "${query}" en esta zona</div>
-                    <div class="meta">Prueba con otra palabra clave, cambia a la capa "📍 Google" en el mapa o mueve el mapa y toca "🌍 Buscar en esta zona".</div>
+                    <div class="meta">Prueba con otra palabra relacionada, cambia a la capa "📍 Google" en el mapa o mueve el mapa y toca "🌍 Buscar en esta zona".</div>
                 </div>`;
             return;
         }
 
-        const masCercano = [...tiendas].sort((a, b) => a.distancia - b.distancia)[0];
-        const mejorResena = [...tiendas].sort((a, b) => b.rating - a.rating)[0];
-        const mejorPrecio = [...tiendas].sort((a, b) => a.precioPromedio - b.precioPromedio)[0];
-        const peorResena = [...tiendas].sort((a, b) => a.rating - b.rating)[0];
+        const masCercano = tiendas[0];
+        const conPrecioReal = tiendas.find(t => t.precioRealTexto);
 
         container.innerHTML += `
             <div class="summary-dashboard">
                 <div class="summary-box">
-                    <small>1° 📍 El más cercano a ti</small>
+                    <small>1° 📍 Local más cercano a ti</small>
                     <strong>${masCercano.nombre}</strong>
-                    <span>${masCercano.distancia.toLocaleString('es-MX')} km ${masCercano.minutosAuto ? `(${masCercano.minutosAuto} min)` : ""} • ⭐ ${masCercano.rating} • ~$${masCercano.precioPromedio} MXN</span>
+                    <span>${masCercano.distancia.toLocaleString('es-MX')} km ${masCercano.minutosAuto ? `(${masCercano.minutosAuto} min en auto)` : ""}</span>
                 </div>
                 <div class="summary-box">
-                    <small>2° ⭐ Mejor calificación</small>
-                    <strong>${mejorResena.nombre}</strong>
-                    <span>${mejorResena.rating} ★ (${mejorResena.resenas} reseñas) • A ${mejorResena.distancia.toLocaleString('es-MX')} km</span>
-                </div>
-                <div class="summary-box">
-                    <small>3° 💰 El más barato encontrado</small>
-                    <strong>${mejorPrecio.nombre}</strong>
-                    <span>~$${mejorPrecio.precioPromedio} MXN • A ${mejorPrecio.distancia.toLocaleString('es-MX')} km</span>
-                </div>
-                <div class="summary-box bad-box">
-                    <small>⚠️ Peor calificación (Sin filtro)</small>
-                    <strong>${peorResena.nombre}</strong>
-                    <span>${peorResena.rating} ★ (${peorResena.resenas} reseñas) • A ${peorResena.distancia.toLocaleString('es-MX')} km</span>
+                    <small>2° ⭐ Reseñas y precios de tienda</small>
+                    <strong>${conPrecioReal ? conPrecioReal.nombre : "Consulta directa por sucursal"}</strong>
+                    <span>${conPrecioReal ? `Tarifa publicada: ${conPrecioReal.precioRealTexto}` : "Cada tarjeta incluye enlace directo al catálogo y reseñas reales"}</span>
                 </div>
             </div>
             <div class="section-divider">
-                <span>🌍 ${tiendas.length} LOCALES REALES — ORDENADOS POR 1° CERCANÍA • 2° RESEÑAS • 3° PRECIO</span>
+                <span>🌍 ${tiendas.length} LOCALES REALES ENCONTRADOS — SIN DATOS INVENTADOS</span>
             </div>
         `;
 
@@ -900,15 +1002,17 @@
 
         tiendas.forEach((op, idx) => {
             const rank = idx + 1;
-            const esMalo = op.rating < 3.5;
-            const colorPin = esMalo ? "#d93025" : (rank === 1 ? "#fbbc04" : (rank <= 3 ? "#1a73e8" : "#188038"));
+            const colorPin = rank === 1 ? "#fbbc04" : (rank <= 3 ? "#1a73e8" : "#188038");
 
             const iconoTienda = L.divIcon({
-                html: `<div style="background:${colorPin}; color:${rank === 1 && !esMalo ? '#000' : '#fff'}; font-weight:bold; font-size:11px; padding:3px 7px; border-radius:12px; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.4); white-space:nowrap;">#${rank} ${op.nombre.slice(0, 17)}</div>`,
+                html: `<div style="background:${colorPin}; color:${rank === 1 ? '#000' : '#fff'}; font-weight:bold; font-size:11px; padding:3px 7px; border-radius:12px; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.4); white-space:nowrap;">#${rank} ${op.nombre.slice(0, 17)}</div>`,
                 className: ''
             });
 
             const tiempoTxt = op.minutosAuto ? ` (${op.minutosAuto} min en auto • ${op.minutosPie} min a pie)` : " (Ruta global)";
+            const precioBadgeHTML = op.precioRealTexto
+                ? `<span class="price-real-badge">🏷️ Tarifa publicada: ${op.precioRealTexto}</span>`
+                : `<span class="price-unlisted-badge">Sin precio publicado en mapa</span>`;
 
             const marker = L.marker([op.lat, op.lon], { icon: iconoTienda })
                 .addTo(capaTiendas)
@@ -916,7 +1020,7 @@
                     <b>#${rank} ${op.nombre}</b><br>
                     📌 ${op.direccion}<br>
                     🛣️ <b>${op.distancia.toLocaleString('es-MX')} km</b>${tiempoTxt}<br>
-                    ⭐ ${op.rating} (${op.resenas} reseñas) • ~$${op.precioPromedio} MXN
+                    ${op.precioRealTexto ? `🏷️ Tarifa: <b>${op.precioRealTexto}</b>` : "🏷️ Consulta precios en el botón de catálogo"}
                 `);
 
             marker.on('click', () => {
@@ -926,36 +1030,35 @@
             marcadoresPorId[rank] = marker;
 
             let badges = [`<span class="rank-num">#${rank}</span>`];
-            if (op === masCercano) badges.push(`<span class="badge gold">📍 MÁS CERCANO (${op.distancia} km)</span>`);
-            if (op === mejorResena) badges.push(`<span class="badge gold">⭐ MEJOR RESEÑA (${op.rating}★)</span>`);
-            if (op === mejorPrecio) badges.push(`<span class="badge green">💰 MEJOR PRECIO (~$${op.precioPromedio})</span>`);
-            if (esMalo) badges.push(`<span class="badge red">⚠️ CALIFICACIÓN BAJA (${op.rating}★)</span>`);
+            if (rank === 1) badges.push(`<span class="badge gold">📍 MÁS CERCANO (${op.distancia} km)</span>`);
+            if (op.precioRealTexto) badges.push(`<span class="badge green">🏷️ TARIFA PUBLICADA</span>`);
 
             const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${op.lat},${op.lon}`;
-            const urlVerResenas = `https://www.google.com/search?q=${encodeURIComponent(op.nombre + " " + op.direccion + " opiniones reseñas")}`;
+            const urlCatalogoTienda = op.sitioWeb
+                ? op.sitioWeb
+                : `https://www.google.com/search?q=${encodeURIComponent(op.nombre + " " + query + " precios catalogo")}`;
+            const urlVerResenas = `https://www.google.com/search?q=${encodeURIComponent(op.nombre + " " + op.direccion + " opiniones reseñas Google Maps")}`;
 
             const cardEl = document.createElement("div");
-            cardEl.className = `card ${esMalo ? 'low-rated' : (rank === 1 ? 'winner' : (rank <= 3 ? 'top3' : ''))}`;
+            cardEl.className = `card ${rank === 1 ? 'winner' : (rank <= 3 ? 'top3' : '')}`;
             cardEl.innerHTML = `
                 <div class="badges">${badges.join("")}</div>
                 <div class="store-banner">
                     <span>🏪 ${op.nombre}</span>
-                    <span class="price-tag">~$${op.precioPromedio} MXN</span>
+                    ${precioBadgeHTML}
                 </div>
                 <div class="meta">
                     🛣️ <b>Distancia: ${op.distancia.toLocaleString('es-MX')} km</b>${tiempoTxt}<br>
                     🏷️ Giro: <b>${op.giro}</b><br>
                     📌 ${op.direccion}
-                </div>
-                <div class="rating-box">
-                    <span class="stars ${esMalo ? 'bad' : ''}">⭐ ${op.rating.toFixed(1)} / 5.0</span>
-                    <span>(${op.resenas} reseñas)</span>
-                    <span>• <i>"${op.comentario}"</i></span>
+                    ${op.horario ? `<br>🕒 Horario real: <b>${op.horario}</b>` : ""}
+                    ${op.telefono ? `<br>📞 Teléfono real: <a href="tel:${op.telefono}">${op.telefono}</a>` : ""}
                 </div>
                 <div class="actions">
                     <button class="btn-focus" id="btn-ruta-${rank}">🛣️ Ver camino #${rank} en el mapa</button>
-                    <a href="${urlGoogleMaps}" target="_blank" class="btn-gmaps">🧭 Cómo llegar (Google Maps)</a>
-                    <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Ver reseñas</a>
+                    <a href="${urlCatalogoTienda}" target="_blank" class="btn-catalog">🏷️ Ver precios reales de esta tienda</a>
+                    <a href="${urlVerResenas}" target="_blank" class="btn-reviews">⭐ Ver reseñas reales</a>
+                    <a href="${urlGoogleMaps}" target="_blank" class="btn-gmaps">🧭 Cómo llegar</a>
                 </div>
             `;
             container.appendChild(cardEl);
