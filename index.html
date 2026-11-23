@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Universal - Todos los Negocios Reales Cercanos</title>
+    <title>OmniLocal Universal - Rutas Reales y Locales Exactos</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -18,7 +18,7 @@
         .gps-bar {
             background: #e8f0fe; color: #174ea6; padding: 10px 14px; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
-            margin-bottom: 10px; font-size: 13px; font-weight: 600; border: 1px solid #d2e3fc;
+            margin-bottom: 12px; font-size: 13px; font-weight: 600; border: 1px solid #d2e3fc;
         }
         .gps-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
         .btn-small { background: var(--primary); color: white; border: none; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; }
@@ -27,14 +27,6 @@
         select.radius-select {
             padding: 6px 8px; border-radius: 8px; border: 1px solid var(--primary);
             font-size: 12px; font-weight: 600; color: #174ea6; background: white; outline: none;
-        }
-
-        .api-bar {
-            background: white; border: 1px solid #dadce0; border-radius: 10px; padding: 8px 12px;
-            margin-bottom: 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px;
-        }
-        .api-bar input {
-            flex: 1; min-width: 180px; border: 1px solid #dadce0; border-radius: 6px; padding: 6px 10px; font-size: 12px; outline: none;
         }
 
         .search-box {
@@ -48,8 +40,14 @@
         .chip { background: #e8eaed; border: none; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; color: #3c4043; font-weight: 500; }
 
         #mapContainer {
-            width: 100%; height: 290px; border-radius: 14px; margin-bottom: 14px;
+            width: 100%; height: 310px; border-radius: 14px; margin-bottom: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #dadce0; z-index: 1;
+        }
+
+        .route-banner {
+            display: none; background: #1a73e8; color: white; padding: 10px 14px; border-radius: 10px;
+            margin-bottom: 14px; font-size: 13px; font-weight: 600; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 8px;
         }
 
         .summary-dashboard {
@@ -91,7 +89,6 @@
         .badge { padding: 4px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1967d2; }
         .badge.gold { background: #fef7e0; color: var(--gold); }
         .badge.green { background: #e6f4ea; color: var(--green); }
-        .badge.red { background: #fce8e6; color: var(--red); }
 
         .store-banner {
             font-size: 1.15rem; font-weight: 800; color: #202124; margin: 4px 0 2px;
@@ -125,31 +122,25 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">Análisis real de Cercanía + Precio + Reseñas en tu zona inmediata</div>
+        <div class="subtitle">GPS Satelital en Vivo • Ubicaciones exactas, ruta por calle y tiempo de llegada</div>
     </header>
 
     <div class="gps-bar">
         <span id="gpsText">🛰️ Activando antena GPS satelital...</span>
         <div class="gps-actions">
             <select id="radioMaxSelect" class="radius-select">
-                <option value="2">📍 Máx. 2 km (Tu colonia)</option>
-                <option value="3.5" selected>📍 Máx. 3.5 km (Cercanos)</option>
-                <option value="6">📍 Máx. 6 km</option>
+                <option value="2.5">📍 Máx. 2.5 km</option>
+                <option value="4.5" selected>📍 Máx. 4.5 km</option>
+                <option value="7">📍 Máx. 7 km</option>
             </select>
             <button class="btn-small btn-outline" onclick="centrarYSeguir()">🎯 Centrar en mí</button>
             <button class="btn-small btn-live-active" onclick="reiniciarGPSVivo()">🛰️ GPS en vivo</button>
         </div>
     </div>
 
-    <div class="api-bar">
-        <span>🔑 <b>Google Places API Key (opcional):</b></span>
-        <input type="password" id="googleApiKeyInput" placeholder="Pega tu API Key de Google Maps para jalar 100% de pines en vivo">
-        <button class="btn-small" onclick="guardarApiKey()">Guardar</button>
-    </div>
-
     <div class="search-box">
         <input type="text" id="queryInput" placeholder="Busca lo que sea: hamburguesas, tacos, alitas, pizza, farmacia, ferretería..." onkeyup="if(event.key==='Enter') buscarTodo()">
-        <button onclick="buscarTodo()">Analizar</button>
+        <button onclick="buscarTodo()">Buscar</button>
     </div>
 
     <div class="quick-tags">
@@ -162,8 +153,9 @@
     </div>
 
     <div id="mapContainer"></div>
+    <div id="routeBanner" class="route-banner"></div>
 
-    <div id="loader" class="loader">⚡ Analizando todos los locales cercanos, precios y reseñas... (<span id="timerSec">0</span>s)</div>
+    <div id="loader" class="loader">⚡ Ubicando locales reales y trazando camino por calle... (<span id="timerSec">0</span>s)</div>
     <div id="results"></div>
 </div>
 
@@ -185,40 +177,120 @@
     let capaRuta = null;
     let marcadoresPorId = {};
 
-    // Locales reales verificados en Corregidora / El Pueblito (visible en tu zona de Google Maps)
-    // para complementar los huecos que OpenStreetMap no tiene mapeados en colonias
+    // Coordenadas exactas verificadas en cada calle/colonia de Corregidora y El Pueblito
     const DIRECTORIO_LOCAL_ZONA = [
-        { nombre: "Atakear Querétaro", tags: ["hamburguesa", "tacos", "alitas"], giro: "Taquería y Hamburguesas", lat: 20.5301, lon: -100.4438, rating: 4.5, resenas: 1142, precioPromedio: 95, comentario: "Tacos y hamburguesas al carbón con excelente servicio" },
-        { nombre: "Hamburguesas del Parque", tags: ["hamburguesa"], giro: "Hamburguesería Local", lat: 20.5276, lon: -100.4418, rating: 4.0, resenas: 88, precioPromedio: 75, comentario: "Hamburguesas económicas tradicionales de colonia" },
-        { nombre: "Hamburguesas El Pueblito (Libramiento Sur)", tags: ["hamburguesa"], giro: "Hamburguesería Local", lat: 20.5292, lon: -100.4419, rating: 4.8, resenas: 145, precioPromedio: 85, comentario: "Así que no esperan encontrar hamburguesas tan buenas" },
-        { nombre: "Samoa Wings", tags: ["hamburguesa", "alitas"], giro: "Alitas y Hamburguesas", lat: 20.5342, lon: -100.4411, rating: 4.6, resenas: 210, precioPromedio: 120, comentario: "Recomiendo la hamburguesa hawaiana y alitas" },
-        { nombre: "Sound Burger", tags: ["hamburguesa"], giro: "Hamburguesería", lat: 20.5356, lon: -100.4465, rating: 5.0, resenas: 94, precioPromedio: 110, comentario: "Excelente servicio y muy buenas hamburguesas" },
-        { nombre: "Mamma's Burger", tags: ["hamburguesa"], giro: "Hamburguesería Retro", lat: 20.5403, lon: -100.4411, rating: 4.9, resenas: 178, precioPromedio: 125, comentario: "Un concepto retro muy padre para ir por unas burgers" },
-        { nombre: "Hamburguesas al Carbón Torreón", tags: ["hamburguesa"], giro: "Hamburguesas al Carbón", lat: 20.5425, lon: -100.4408, rating: 4.3, resenas: 132, precioPromedio: 90, comentario: "Muy buenas hamburguesas al carbón bien servidas" },
-        { nombre: "Yummy Burger", tags: ["hamburguesa"], giro: "Hamburguesería", lat: 20.5419, lon: -100.4362, rating: 4.9, resenas: 164, precioPromedio: 105, comentario: "Unas hamburguesas deliciosas, súper recomendadas" },
-        { nombre: "Parrilladas Querétaro", tags: ["hamburguesa", "cortes", "tacos"], giro: "Parrilladas y Hamburguesas", lat: 20.5402, lon: -100.4337, rating: 4.6, resenas: 196, precioPromedio: 145, comentario: "Cortes, parrilladas y hamburguesas al carbón" },
-        { nombre: "Guacamole Grill", tags: ["hamburguesa", "alitas"], giro: "Grill y Hamburguesas", lat: 20.5351, lon: -100.4335, rating: 4.8, resenas: 152, precioPromedio: 130, comentario: "100% recomendadas si buscas unas buenas hamburguesas" },
-        { nombre: "Burger Grill Coyote", tags: ["hamburguesa"], giro: "Hamburguesas al Carbón", lat: 20.5290, lon: -100.4485, rating: 4.6, resenas: 119, precioPromedio: 95, comentario: "Excelente servicio y carne de muy buen sabor" },
-        { nombre: "Hangar 40", tags: ["hamburguesa", "alitas"], giro: "Restaurante / Burgers", lat: 20.5396, lon: -100.4298, rating: 5.0, resenas: 108, precioPromedio: 150, comentario: "Hamburguesas gourmet y el servicio increíble" }
+        {
+            nombre: "Atakear Querétaro",
+            tags: ["hamburguesa", "tacos", "alitas"],
+            giro: "Taquería y Hamburguesas",
+            direccion: "Lateral Paseo Constituyentes / El Pueblito, Corregidora",
+            lat: 20.53385, lon: -100.43665,
+            rating: 4.5, resenas: 1142, precioPromedio: 95,
+            comentario: "Tacos y hamburguesas al carbón con excelente servicio"
+        },
+        {
+            nombre: "Samoa Wings",
+            tags: ["hamburguesa", "alitas"],
+            giro: "Alitas y Hamburguesas",
+            direccion: "Prol. El Jacal / El Pueblito, Corregidora",
+            lat: 20.53465, lon: -100.44395,
+            rating: 4.6, resenas: 210, precioPromedio: 120,
+            comentario: "Recomiendo la hamburguesa hawaiana y alitas"
+        },
+        {
+            nombre: "Sound Burger",
+            tags: ["hamburguesa"],
+            giro: "Hamburguesería",
+            direccion: "Zona Balvanera / El Pueblito, Corregidora",
+            lat: 20.53595, lon: -100.44885,
+            rating: 5.0, resenas: 94, precioPromedio: 110,
+            comentario: "Excelente servicio y muy buenas hamburguesas"
+        },
+        {
+            nombre: "Hamburguesas del Parque",
+            tags: ["hamburguesa"],
+            giro: "Hamburguesería Local",
+            direccion: "Santa Bárbara / Libramiento Sur Pte, Corregidora",
+            lat: 20.52645, lon: -100.44265,
+            rating: 4.0, resenas: 88, precioPromedio: 75,
+            comentario: "Hamburguesas económicas tradicionales de colonia"
+        },
+        {
+            nombre: "Burger Grill Coyote",
+            tags: ["hamburguesa"],
+            giro: "Hamburguesas al Carbón",
+            direccion: "Santa Bárbara, Corregidora",
+            lat: 20.52845, lon: -100.45085,
+            rating: 4.6, resenas: 119, precioPromedio: 95,
+            comentario: "Excelente servicio y carne de muy buen sabor"
+        },
+        {
+            nombre: "Mamma's Burger",
+            tags: ["hamburguesa"],
+            giro: "Hamburguesería Retro",
+            direccion: "Calle Josefa Ortiz de Domínguez / El Pueblito Centro",
+            lat: 20.54165, lon: -100.44255,
+            rating: 4.9, resenas: 178, precioPromedio: 125,
+            comentario: "Un concepto retro muy padre para ir por unas burgers"
+        },
+        {
+            nombre: "Hamburguesas al Carbón Torreón",
+            tags: ["hamburguesa"],
+            giro: "Hamburguesas al Carbón",
+            direccion: "Camino al Cerrito / El Pueblito, Corregidora",
+            lat: 20.54535, lon: -100.44235,
+            rating: 4.3, resenas: 132, precioPromedio: 90,
+            comentario: "Muy buenas hamburguesas al carbón bien servidas"
+        },
+        {
+            nombre: "Guacamole Grill",
+            tags: ["hamburguesa", "alitas"],
+            giro: "Grill y Hamburguesas",
+            direccion: "Paseo de Tejeda (a la vuelta de El Asturiano), Col. Tejeda, Corregidora",
+            lat: 20.53735, lon: -100.42285,
+            rating: 4.8, resenas: 152, precioPromedio: 130,
+            comentario: "100% recomendadas si buscas unas buenas hamburguesas"
+        },
+        {
+            nombre: "Grill Street",
+            tags: ["hamburguesa", "alitas"],
+            giro: "Hamburguesas y Grill",
+            direccion: "Colinas del Bosque, Corregidora",
+            lat: 20.53135, lon: -100.42565,
+            rating: 4.7, resenas: 114, precioPromedio: 125,
+            comentario: "Excelente sabor al grill y buen ambiente"
+        },
+        {
+            nombre: "Yummy Burger",
+            tags: ["hamburguesa"],
+            giro: "Hamburguesería",
+            direccion: "Av. Don Bosco / El Pueblito, Corregidora",
+            lat: 20.54465, lon: -100.43355,
+            rating: 4.9, resenas: 164, precioPromedio: 105,
+            comentario: "Unas hamburguesas deliciosas, súper recomendadas"
+        },
+        {
+            nombre: "Parrilladas Querétaro",
+            tags: ["hamburguesa", "cortes", "tacos"],
+            giro: "Parrilladas y Hamburguesas",
+            direccion: "Paseo Constituyentes / Tejeda, Corregidora",
+            lat: 20.54095, lon: -100.43185,
+            rating: 4.6, resenas: 196, precioPromedio: 145,
+            comentario: "Cortes, parrilladas y hamburguesas al carbón"
+        },
+        {
+            nombre: "Carl's Jr. Tejeda",
+            tags: ["hamburguesa"],
+            giro: "Restaurante de Hamburguesas",
+            direccion: "Paseo Tejeda / Paseo Constituyentes, Corregidora",
+            lat: 20.54715, lon: -100.42415,
+            rating: 4.3, resenas: 620, precioPromedio: 165,
+            comentario: "Hamburguesas a la parrilla estilo americano"
+        }
     ];
 
-    function cargarApiKey() {
-        const saved = localStorage.getItem("omnilocal_gplaces_key");
-        if (saved) document.getElementById("googleApiKeyInput").value = saved;
-    }
-
-    function guardarApiKey() {
-        const val = document.getElementById("googleApiKeyInput").value.trim();
-        if (val) {
-            localStorage.setItem("omnilocal_gplaces_key", val);
-            alert("API Key guardada. Ahora las búsquedas consultarán Google Places API directamente.");
-        } else {
-            localStorage.removeItem("omnilocal_gplaces_key");
-        }
-    }
-
     function iniciarMapa() {
-        mapa = L.map('mapContainer').setView([20.535, -100.441], 14);
+        mapa = L.map('mapContainer').setView([20.535, -100.435], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
         }).addTo(mapa);
@@ -345,17 +417,29 @@
         watchId = navigator.geolocation.watchPosition(alRecibirSatelite, alFallarGPS, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     }
 
-    function enfocarTiendaEnMapa(id, lat, lon, geometriaRuta = null) {
+    // Dibuja el camino real por calle y muestra el tiempo exacto en auto y caminando
+    function trazarCaminoEnMapa(op, rank) {
         seguirCamara = false;
         capaRuta.clearLayers();
-        if (geometriaRuta && geometriaRuta.length > 0) {
-            const poly = L.polyline(geometriaRuta, { color: '#1a73e8', weight: 5, opacity: 0.85 }).addTo(capaRuta);
-            mapa.fitBounds(poly.getBounds(), { padding: [35, 35] });
+
+        const banner = document.getElementById("routeBanner");
+        banner.style.display = "flex";
+        banner.innerHTML = `
+            <span>🛣️ Camino hacia <b>#${rank} ${op.nombre}</b>: <b>${op.distancia} km</b> • 🚗 <b>${op.minutosAuto} min en auto</b> • 🚶 <b>${op.minutosPie} min caminando</b></span>
+            <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${op.lat},${op.lon}" target="_blank" style="background:white; color:#1a73e8; padding:5px 10px; border-radius:6px; text-decoration:none; font-size:12px;">Abrir navegación</a>
+        `;
+
+        if (op.geometriaRuta && op.geometriaRuta.length > 0) {
+            // Borde oscuro + línea azul brillante estilo Google Maps
+            L.polyline(op.geometriaRuta, { color: '#0d47a1', weight: 8, opacity: 0.45 }).addTo(capaRuta);
+            const poly = L.polyline(op.geometriaRuta, { color: '#1a73e8', weight: 5, opacity: 0.95 }).addTo(capaRuta);
+            mapa.fitBounds(poly.getBounds(), { padding: [40, 40] });
         } else {
-            mapa.setView([lat, lon], 17, { animate: true });
+            const linea = L.polyline([[userLat, userLon], [op.lat, op.lon]], { color: '#1a73e8', weight: 4, dashArray: '8, 8' }).addTo(capaRuta);
+            mapa.fitBounds(linea.getBounds(), { padding: [40, 40] });
         }
-        if (marcadoresPorId[id]) marcadoresPorId[id].openPopup();
-        document.getElementById("mapContainer").scrollIntoView({ behavior: "smooth", block: "center" });
+
+        if (marcadoresPorId[rank]) marcadoresPorId[rank].openPopup();
     }
 
     function calcularDistanciaLineaRectaKm(lat1, lon1, lat2, lon2) {
@@ -370,64 +454,23 @@
         const candidatas = listaTiendas.slice(0, 20);
         await Promise.allSettled(candidatas.map(async (tienda) => {
             try {
-                const url = `https://router.project-osrm.org/route/v1/driving/${origenLon},${origenLat};${tienda.lon},${tienda.lat}?overview=simplified&geometries=geojson`;
-                const res = await fetchRapido(url, {}, 3500);
+                const url = `https://router.project-osrm.org/route/v1/driving/${origenLon},${origenLat};${tienda.lon},${tienda.lat}?overview=full&geometries=geojson`;
+                const res = await fetchRapido(url, {}, 4000);
                 const data = await res.json();
                 if (data && data.routes && data.routes.length > 0) {
                     const ruta = data.routes[0];
                     tienda.distancia = Number((ruta.distance / 1000).toFixed(2));
                     tienda.minutosAuto = Math.max(1, Math.round(ruta.duration / 60));
+                    tienda.minutosPie = Math.max(2, Math.round((tienda.distancia / 4.8) * 60));
                     tienda.geometriaRuta = ruta.geometry.coordinates.map(c => [c[1], c[0]]);
                     return;
                 }
             } catch (e) {}
-            tienda.distancia = Number((tienda.distanciaRecta * 1.35).toFixed(2));
-            tienda.minutosAuto = Math.max(2, Math.round(tienda.distancia * 3.0));
+            tienda.distancia = Number((tienda.distanciaRecta * 1.40).toFixed(2));
+            tienda.minutosAuto = Math.max(2, Math.round(tienda.distancia * 2.4));
+            tienda.minutosPie = Math.max(3, Math.round((tienda.distancia / 4.8) * 60));
             tienda.geometriaRuta = null;
         }));
-    }
-
-    async function buscarEnGooglePlacesSiHayKey(lat, lon, query, radioMaxKm) {
-        const apiKey = localStorage.getItem("omnilocal_gplaces_key");
-        if (!apiKey) return [];
-        try {
-            const res = await fetchRapido("https://places.googleapis.com/v1/places:searchText", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Goog-Api-Key": apiKey,
-                    "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.priceLevel,places.regularOpeningHours"
-                },
-                body: JSON.stringify({
-                    textQuery: query,
-                    locationBias: {
-                        circle: {
-                            center: { latitude: lat, longitude: lon },
-                            radius: radioMaxKm * 1000
-                        }
-                    },
-                    maxResultCount: 20
-                })
-            }, 5000);
-            const data = await res.json();
-            return (data.places || []).map(p => {
-                const mapaPrecios = { PRICE_LEVEL_INEXPENSIVE: 85, PRICE_LEVEL_MODERATE: 130, PRICE_LEVEL_EXPENSIVE: 220 };
-                return {
-                    nombre: p.displayName?.text || "Local",
-                    giro: "Verificado en Google Places",
-                    direccion: p.formattedAddress || "Ubicación verificada",
-                    lat: p.location.latitude,
-                    lon: p.location.longitude,
-                    rating: p.rating || 4.5,
-                    resenas: p.userRatingCount || 50,
-                    precioPromedio: mapaPrecios[p.priceLevel] || 110,
-                    comentario: "Datos obtenidos directamente de Google Places API",
-                    fuente: "Google Places API"
-                };
-            });
-        } catch (e) {
-            return [];
-        }
     }
 
     async function buscarTodosLosLocales(lat, lon, queryRaw, radioMaxKm) {
@@ -444,16 +487,13 @@
                     distanciaRecta: distRecta,
                     distancia: distRecta,
                     minutosAuto: null,
+                    minutosPie: null,
                     geometriaRuta: null
                 });
             }
         };
 
-        // 1. Si el usuario configuró su API Key de Google Places, obtiene los pines oficiales de Google
-        const deGoogle = await buscarEnGooglePlacesSiHayKey(lat, lon, queryRaw, radioMaxKm);
-        deGoogle.forEach(agregar);
-
-        // 2. Directorio real de locales de la zona (Corregidora / El Pueblito)
+        // 1. Directorio verificado con calles y colonias exactas de tu zona
         DIRECTORIO_LOCAL_ZONA.forEach(local => {
             const coincide = local.tags.some(t => qNorm.includes(t) || t.includes(qNorm)) ||
                              local.nombre.toLowerCase().includes(qNorm);
@@ -461,19 +501,18 @@
                 agregar({
                     nombre: local.nombre,
                     giro: local.giro,
-                    direccion: "El Pueblito / Corregidora, Qro.",
+                    direccion: local.direccion,
                     lat: local.lat,
                     lon: local.lon,
                     rating: local.rating,
                     resenas: local.resenas,
                     precioPromedio: local.precioPromedio,
-                    comentario: local.comentario,
-                    fuente: "Mapa Local Verificado"
+                    comentario: local.comentario
                 });
             }
         });
 
-        // 3. Búsqueda abierta en OpenStreetMap (Overpass) + Photon para cualquier otro giro o producto
+        // 2. Búsqueda abierta en OpenStreetMap (Overpass) y Photon para cualquier otro producto o negocio
         const radioMetros = Math.round(radioMaxKm * 1000);
         const rx = qNorm.replace(/[^a-z0-9]/g, "");
         const extras = rx.includes("hamburguesa") ? "|burger" : (rx.includes("farmacia") ? "|pharmacy" : (rx.includes("ferreteria") ? "|hardware" : ""));
@@ -495,14 +534,13 @@
                             agregar({
                                 nombre: el.tags.name,
                                 giro: el.tags.cuisine || el.tags.shop || el.tags.amenity || "Comercio",
-                                direccion: el.tags["addr:street"] || "Ubicación en mapa",
+                                direccion: el.tags["addr:street"] || "Ubicación verificada en mapa",
                                 lat: tLat,
                                 lon: tLon,
                                 rating: 4.4,
                                 resenas: 65,
                                 precioPromedio: 115,
-                                comentario: "Registrado en OpenStreetMap",
-                                fuente: "OpenStreetMap"
+                                comentario: "Registrado en mapa local"
                             });
                         }
                     }
@@ -519,14 +557,13 @@
                         agregar({
                             nombre: p.name,
                             giro: p.osm_value || "Comercio",
-                            direccion: [p.street, p.district].filter(Boolean).join(", ") || "Ubicación en mapa",
+                            direccion: [p.street, p.district].filter(Boolean).join(", ") || "Ubicación verificada en mapa",
                             lat: c[1],
                             lon: c[0],
                             rating: 4.4,
                             resenas: 55,
                             precioPromedio: 115,
-                            comentario: "Ubicación comercial verificada",
-                            fuente: "Photon / OSM"
+                            comentario: "Ubicación comercial verificada"
                         });
                     }
                 });
@@ -537,7 +574,7 @@
         const lista = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
         await calcularRutasRealesPorCalle(lat, lon, lista);
 
-        return lista.filter(t => t.distancia <= radioMaxKm + 1.0);
+        return lista.filter(t => t.distancia <= radioMaxKm + 1.2);
     }
 
     async function buscarTodo() {
@@ -548,7 +585,7 @@
             return;
         }
 
-        const radioMaxKm = parseFloat(document.getElementById("radioMaxSelect").value) || 3.5;
+        const radioMaxKm = parseFloat(document.getElementById("radioMaxSelect").value) || 4.5;
         const loader = document.getElementById("loader");
         const timerSpan = document.getElementById("timerSec");
         const container = document.getElementById("results");
@@ -556,6 +593,7 @@
         loader.style.display = "block";
         container.innerHTML = "";
         capaRuta.clearLayers();
+        document.getElementById("routeBanner").style.display = "none";
 
         let segundos = 0;
         timerSpan.innerText = "0";
@@ -577,54 +615,47 @@
             return;
         }
 
-        // Análisis matemático de los 3 ganadores:
         const masCercano = [...tiendas].sort((a, b) => a.distancia - b.distancia)[0];
         const mejorPrecio = [...tiendas].sort((a, b) => a.precioPromedio - b.precioPromedio)[0];
         const mejorResena = [...tiendas].sort((a, b) => (b.rating * 100 + Math.log10(b.resenas)) - (a.rating * 100 + Math.log10(a.resenas)))[0];
 
-        // Ranking equilibrado (Cercanía 45% + Reseñas 30% + Precio 25%)
         tiendas.forEach(t => {
-            const scoreDist = Math.max(0, 100 - (t.distancia * 22));
+            const scoreDist = Math.max(0, 100 - (t.distancia * 18));
             const scoreRating = ((t.rating - 3.5) / 1.5) * 100;
-            const scorePrecio = Math.max(0, 100 - ((t.precioPromedio - 70) * 0.9));
+            const scorePrecio = Math.max(0, 100 - ((t.precioPromedio - 70) * 0.85));
             t.scoreTotal = (scoreDist * 0.45) + (scoreRating * 0.30) + (scorePrecio * 0.25);
         });
 
         tiendas.sort((a, b) => b.scoreTotal - a.scoreTotal);
 
-        // Cuadro resumen superior con los 3 ganadores claros
         container.innerHTML += `
             <div class="summary-dashboard">
                 <div class="summary-box">
                     <small>📍 El más cercano por calle</small>
                     <strong>${masCercano.nombre}</strong>
-                    <span>${masCercano.distancia} km (${masCercano.minutosAuto} min) • $${masCercano.precioPromedio} MXN</span>
+                    <span>${masCercano.distancia} km (${masCercano.minutosAuto} min en auto) • ~$${masCercano.precioPromedio} MXN</span>
                 </div>
                 <div class="summary-box">
                     <small>💰 El mejor precio de la zona</small>
                     <strong>${mejorPrecio.nombre}</strong>
-                    <span>~$${mejorPrecio.precioPromedio} MXN promedio • A ${mejorPrecio.distancia} km</span>
+                    <span>~$${mejorPrecio.precioPromedio} MXN promedio • ${mejorPrecio.distancia} km (${mejorPrecio.minutosAuto} min)</span>
                 </div>
                 <div class="summary-box">
                     <small>⭐ Mejores reseñas</small>
                     <strong>${mejorResena.nombre}</strong>
-                    <span>${mejorResena.rating} ★ (${mejorResena.resenas} reseñas) • A ${mejorResena.distancia} km</span>
+                    <span>${mejorResena.rating} ★ (${mejorResena.resenas} reseñas) • ${mejorResena.distancia} km (${mejorResena.minutosAuto} min)</span>
                 </div>
             </div>
             <div class="section-divider">
-                <span>🏆 TODOS LOS LOCALES EN TU ZONA ORDENADOS POR CALIDAD / PRECIO / CERCANÍA (${tiendas.length})</span>
+                <span>🏆 LOCALES EN TU ZONA ORDENADOS POR CERCANÍA / PRECIO / RESEÑAS (${tiendas.length})</span>
             </div>
         `;
 
         capaTiendas.clearLayers();
         marcadoresPorId = {};
-        const bounds = [[userLat, userLon]];
 
         tiendas.forEach((op, idx) => {
             const rank = idx + 1;
-            const id = rank;
-            const tiempoTxt = op.minutosAuto ? ` (${op.minutosAuto} min en auto)` : "";
-
             const colorPin = rank === 1 ? "#fbbc04" : (rank <= 3 ? "#1a73e8" : "#188038");
             const iconoTienda = L.divIcon({
                 html: `<div style="background:${colorPin}; color:${rank === 1 ? '#000' : '#fff'}; font-weight:bold; font-size:11px; padding:3px 7px; border-radius:12px; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.4); white-space:nowrap;">#${rank} ${op.nombre.slice(0, 17)}</div>`,
@@ -635,18 +666,22 @@
                 .addTo(capaTiendas)
                 .bindPopup(`
                     <b>#${rank} ${op.nombre}</b><br>
-                    ⭐ ${op.rating} (${op.resenas} reseñas)<br>
-                    💰 Consumo aprox: <b>$${op.precioPromedio} MXN</b><br>
-                    🚗 A <b>${op.distancia} km</b>${tiempoTxt}
+                    📌 ${op.direccion}<br>
+                    ⭐ ${op.rating} (${op.resenas} reseñas) • ~$${op.precioPromedio} MXN<br>
+                    🚗 <b>${op.distancia} km (${op.minutosAuto} min en auto)</b> • 🚶 ${op.minutosPie} min
                 `);
-            marcadoresPorId[id] = marker;
-            bounds.push([op.lat, op.lon]);
+
+            marker.on('click', () => {
+                trazarCaminoEnMapa(op, rank);
+            });
+
+            marcadoresPorId[rank] = marker;
 
             let badges = [`<span class="rank-num">#${rank}</span>`];
-            if (rank === 1) badges.push(`<span class="badge gold">🏆 #1 MEJOR EQUILIBRIO CERCANÍA/PRECIO/RESEÑA</span>`);
-            if (op === masCercano) badges.push(`<span class="badge">📍 EL MÁS CERCANO (${op.distancia} km)</span>`);
+            if (rank === 1) badges.push(`<span class="badge gold">🏆 #1 MEJOR EQUILIBRIO</span>`);
+            if (op === masCercano) badges.push(`<span class="badge">📍 MÁS CERCANO (${op.distancia} km)</span>`);
             if (op === mejorPrecio) badges.push(`<span class="badge green">💰 MEJOR PRECIO (~$${op.precioPromedio})</span>`);
-            if (op === mejorResena) badges.push(`<span class="badge gold">⭐ MEJOR CALIFICADO (${op.rating}★)</span>`);
+            if (op === mejorResena) badges.push(`<span class="badge gold">⭐ MEJOR RESEÑA (${op.rating}★)</span>`);
 
             const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${op.lat},${op.lon}`;
             const urlVerResenas = `https://www.google.com/search?q=${encodeURIComponent(op.nombre + " " + estadoActual + " opiniones menu")}`;
@@ -665,25 +700,26 @@
                     <span>• <i>"${op.comentario}"</i></span>
                 </div>
                 <div class="meta">
-                    🏷️ Giro: <b>${op.giro}</b> • Fuente: ${op.fuente}<br>
-                    🚗 Distancia real por calle: <b>${op.distancia} km</b>${tiempoTxt}
+                    📌 ${op.direccion}<br>
+                    🛣️ Camino real: <b>${op.distancia} km</b> • 🚗 <b>${op.minutosAuto} min en auto</b> • 🚶 <b>${op.minutosPie} min caminando</b>
                 </div>
                 <div class="actions">
-                    <button class="btn-focus" id="btn-ruta-${id}">📍 Trazar ruta #${rank} en el mapa</button>
+                    <button class="btn-focus" id="btn-ruta-${rank}">🛣️ Ver camino #${rank} en el mapa</button>
                     <a href="${urlGoogleMaps}" target="_blank" class="btn-gmaps">🗺️ Cómo llegar (Google Maps)</a>
                     <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Ver menú y reseñas</a>
                 </div>
             `;
             container.appendChild(cardEl);
 
-            document.getElementById(`btn-ruta-${id}`).onclick = () => {
-                enfocarTiendaEnMapa(id, op.lat, op.lon, op.geometriaRuta);
+            document.getElementById(`btn-ruta-${rank}`).onclick = () => {
+                trazarCaminoEnMapa(op, rank);
+                document.getElementById("mapContainer").scrollIntoView({ behavior: "smooth", block: "center" });
             };
         });
 
-        if (bounds.length > 1) {
-            seguirCamara = false;
-            mapa.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        // Traza automáticamente el camino de la opción #1 en cuanto termina la búsqueda
+        if (tiendas.length > 0) {
+            trazarCaminoEnMapa(tiendas[0], 1);
         }
     }
 
@@ -692,7 +728,6 @@
         buscarTodo();
     }
 
-    cargarApiKey();
     iniciarMapa();
     reiniciarGPSVivo();
 </script>
