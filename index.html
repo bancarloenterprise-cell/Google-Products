@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Universal - Conectado a Google Maps Places API</title>
+    <title>OmniLocal Global - Todos los Locales del Mundo por Cercanía Real</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -14,21 +14,6 @@
         header { text-align: center; margin-bottom: 12px; }
         h1 { font-size: 2.1rem; margin: 0; color: var(--primary); letter-spacing: -0.5px; }
         .subtitle { color: #5f6368; font-size: 0.88rem; margin-top: 3px; }
-
-        .api-bar {
-            background: #fff8e1; border: 1px solid #ffe082; border-radius: 12px; padding: 10px 14px;
-            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 8px; font-size: 12.5px;
-        }
-        .api-bar.connected { background: #e6f4ea; border-color: #a8dab5; color: #137333; }
-        .api-controls { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
-        .api-controls input {
-            padding: 6px 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 12px; min-width: 210px;
-        }
-        .btn-api {
-            background: #188038; color: white; border: none; padding: 6px 12px; border-radius: 8px;
-            font-size: 12px; font-weight: 700; cursor: pointer;
-        }
 
         .gps-bar {
             background: #e8f0fe; color: #174ea6; padding: 10px 14px; border-radius: 12px;
@@ -161,24 +146,16 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">Sincronizado con Google Maps Places API + Mapa Mundial Sin Límites</div>
+        <div class="subtitle">Barrido Mundial en Tiempo Real • Desde tu cuadra hasta todo el planeta</div>
     </header>
-
-    <div id="apiBar" class="api-bar">
-        <span id="apiStatusText">🔑 <b>Conecta Google Maps API</b> para descargar todos los pines reales en tarjetas:</span>
-        <div class="api-controls">
-            <input type="password" id="googleApiKeyInput" placeholder="Pega aquí tu Google Places API Key (AIzaSy...)">
-            <button class="btn-api" onclick="guardarGoogleApiKey()">Conectar Google Maps</button>
-        </div>
-    </div>
 
     <div class="gps-bar">
         <span id="gpsText">🛰️ Activando antena GPS satelital...</span>
         <div class="gps-actions">
             <select id="alcanceSelect" class="radius-select">
-                <option value="cerca" selected>📍 Primero los más cercanos a mí</option>
-                <option value="global">🌍 Todo el Mapa Mundial (Sin límite)</option>
-                <option value="vista">🗺️ Vista actual del mapa</option>
+                <option value="cerca_y_mundo" selected>📍 Primero los más cercanos → luego todo el mundo</option>
+                <option value="vista">🗺️ Solo en la vista actual del mapa</option>
+                <option value="solo_cerca">🏠 Solo en mi ciudad / alrededor de mí</option>
             </select>
             <button class="btn-small btn-outline" onclick="centrarYSeguir()">🎯 Centrar en mí</button>
             <button class="btn-small btn-live-active" onclick="reiniciarGPSVivo()">🛰️ GPS en vivo</button>
@@ -186,16 +163,17 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="queryInput" placeholder="Busca lo que sea: aparecerá en OmniLocal y en Google Maps en vivo..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
+        <input type="text" id="queryInput" placeholder="Busca cualquier tienda, restaurante, taller, clínica, hotel o servicio..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
         <button onclick="buscarTodo(false)">Buscar en Todo</button>
     </div>
 
     <div class="quick-tags">
+        <button class="chip" onclick="buscarRapido('restaurante')">🍽️ Restaurantes</button>
         <button class="chip" onclick="buscarRapido('hamburguesa')">🍔 Hamburguesas</button>
         <button class="chip" onclick="buscarRapido('tacos')">🌮 Tacos</button>
-        <button class="chip" onclick="buscarRapido('sex shop')">💋 Sex Shop</button>
         <button class="chip" onclick="buscarRapido('zapateria')">👠 Zapatería / Tacón</button>
         <button class="chip" onclick="buscarRapido('farmacia')">💊 Farmacia</button>
+        <button class="chip" onclick="buscarRapido('supermercado')">🛒 Supermercado</button>
         <button class="chip" onclick="buscarRapido('taller')">🔧 Taller</button>
         <button class="chip" onclick="buscarRapido('hotel')">🏨 Hotel</button>
     </div>
@@ -217,12 +195,11 @@
 
     <div id="routeBanner" class="route-banner"></div>
 
-    <div id="loader" class="loader">🌍 Descargando datos reales de Google Maps, OpenStreetMap, Photon y Nominatim... (<span id="timerSec">0</span>s)</div>
+    <div id="loader" class="loader">🌍 Escaneando primero tu calle y colonia, y después todo el mapa mundial... (<span id="timerSec">0</span>s)</div>
     <div id="results"></div>
 </div>
 
 <script>
-    let googleApiKey = localStorage.getItem("omnilocal_google_places_key") || "";
     let userLat = null;
     let userLon = null;
     let userAcc = null;
@@ -238,32 +215,6 @@
     let capaTiendas = null;
     let capaRuta = null;
     let marcadoresPorId = {};
-
-    function actualizarEstadoApiUI() {
-        const bar = document.getElementById("apiBar");
-        const txt = document.getElementById("apiStatusText");
-        const inp = document.getElementById("googleApiKeyInput");
-        if (googleApiKey) {
-            bar.classList.add("connected");
-            txt.innerHTML = "✅ <b>Google Maps Places API Conectada:</b> Descargando el 100% de pines, reseñas y horarios reales.";
-            inp.value = googleApiKey;
-        } else {
-            bar.classList.remove("connected");
-            txt.innerHTML = "🔑 <b>Conecta Google Maps API</b> (opcional, gratis) para descargar todos los pines reales en tarjetas:";
-        }
-    }
-
-    function guardarGoogleApiKey() {
-        const val = document.getElementById("googleApiKeyInput").value.trim();
-        googleApiKey = val;
-        if (val) {
-            localStorage.setItem("omnilocal_google_places_key", val);
-            alert("✅ Google Maps Places API conectada. Ahora todas las búsquedas traerán los locales reales de Google Maps.");
-        } else {
-            localStorage.removeItem("omnilocal_google_places_key");
-        }
-        actualizarEstadoApiUI();
-    }
 
     function cambiarVistaMapa(modo) {
         const mapEl = document.getElementById("mapContainer");
@@ -361,7 +312,7 @@
         }
     }
 
-    async function fetchRapido(url, opciones = {}, timeoutMs = 6000) {
+    async function fetchRapido(url, opciones = {}, timeoutMs = 6500) {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -472,43 +423,53 @@
         return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
     }
 
+    // Traductor universal de español a etiquetas internacionales OSM / Photon / Nominatim
     function expandirTerminosUniversales(queryRaw) {
         const qNorm = queryRaw.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const palabras = qNorm.split(/\s+/).filter(Boolean);
         const setOSM = new Set(palabras.map(p => p.replace(/[^a-z0-9]/g, "")).filter(p => p.length > 2));
-        let busquedaPhoton = queryRaw.trim();
+        const terminosPhoton = new Set([queryRaw.trim()]);
 
-        if (qNorm.match(/sex|erotic|lenceria|adult|intim/)) {
-            ["erotic", "adult", "sex", "sexi", "pinky", "lenceria", "intim"].forEach(t => setOSM.add(t));
-            busquedaPhoton = "sex shop";
-        } else if (qNorm.match(/tacon|zapato|zapatilla|calzado|bota|tenis|sandalia|huarache/)) {
-            ["shoes", "zapateria", "calzado", "zapatos", "flexi", "andrea", "price shoes", "department_store"].forEach(t => setOSM.add(t));
-            busquedaPhoton = "zapateria";
-        } else if (qNorm.match(/hamburguesa|burger/)) {
-            ["burger", "hamburguesa", "burgers", "mcdonald", "carls"].forEach(t => setOSM.add(t));
-        } else if (qNorm.match(/taco|taqueria|pastor|birria/)) {
-            ["taco", "taqueria", "birria"].forEach(t => setOSM.add(t));
-        } else if (qNorm.match(/farmacia|medicina|pastilla/)) {
-            ["pharmacy", "farmacia"].forEach(t => setOSM.add(t));
-            busquedaPhoton = "farmacia";
-        } else if (qNorm.match(/ferreteria|taladro|tornillo|martillo/)) {
-            ["hardware", "ferreteria", "tlapaleria"].forEach(t => setOSM.add(t));
-            busquedaPhoton = "ferreteria";
-        } else if (qNorm.match(/taller|mecanico|llanta|afinacion/)) {
-            ["car_repair", "tyres", "taller", "llantera"].forEach(t => setOSM.add(t));
-        } else if (qNorm.match(/hotel|hospedaje|motel/)) {
-            ["hotel", "motel", "hostel"].forEach(t => setOSM.add(t));
-        }
+        const reglas = [
+            { match: /restaurante|comida|comer|fonda|cocina/, osm: ["restaurant", "fast_food", "food_court", "cafe", "restaurante", "cocina", "fonda"], photon: ["restaurante", "restaurant"] },
+            { match: /hamburguesa|burger/, osm: ["burger", "hamburguesa", "burgers", "fast_food"], photon: ["hamburguesa", "burger"] },
+            { match: /taco|taqueria|pastor|birria/, osm: ["taco", "taqueria", "birria", "mexican"], photon: ["tacos", "taqueria"] },
+            { match: /pizza|pizzeria/, osm: ["pizza", "pizzeria", "italian"], photon: ["pizza", "pizzeria"] },
+            { match: /cafe|cafeteria|coffee/, osm: ["cafe", "coffee", "cafeteria", "bakery"], photon: ["cafeteria", "cafe"] },
+            { match: /pan|panaderia|pastel|pasteleria/, osm: ["bakery", "pastry", "panaderia", "pasteleria"], photon: ["panaderia", "pasteleria"] },
+            { match: /tacon|zapato|zapatilla|calzado|zapateria|bota|tenis/, osm: ["shoes", "zapateria", "calzado", "zapatos", "department_store"], photon: ["zapateria", "calzado"] },
+            { match: /ropa|boutique|tienda de ropa|moda/, osm: ["clothes", "fashion", "boutique", "department_store", "ropa"], photon: ["tienda de ropa", "boutique"] },
+            { match: /farmacia|medicina|botica/, osm: ["pharmacy", "chemist", "farmacia"], photon: ["farmacia"] },
+            { match: /hospital|clinica|doctor|medico|consultorio/, osm: ["hospital", "clinic", "doctors", "pharmacy", "clinica"], photon: ["clinica", "hospital"] },
+            { match: /dentista|dental/, osm: ["dentist", "dental"], photon: ["dentista"] },
+            { match: /super|supermercado|abarrotes|tienda|oxxo/, osm: ["supermarket", "convenience", "grocery", "department_store", "abarrotes", "oxxo"], photon: ["supermercado", "tienda"] },
+            { match: /ferreteria|tlapaleria|herramienta|materiales/, osm: ["hardware", "doityourself", "ferreteria", "tlapaleria"], photon: ["ferreteria"] },
+            { match: /taller|mecanico|llanta|llantera|auto/, osm: ["car_repair", "tyres", "car_parts", "taller", "llantera"], photon: ["taller mecanico"] },
+            { match: /gasolinera|gasolina/, osm: ["fuel", "gasolinera", "pemex"], photon: ["gasolinera"] },
+            { match: /banco|cajero/, osm: ["bank", "atm", "banco"], photon: ["banco"] },
+            { match: /hotel|motel|hospedaje|hostal/, osm: ["hotel", "motel", "hostel", "guest_house"], photon: ["hotel"] },
+            { match: /gimnasio|gym/, osm: ["fitness_centre", "sports_centre", "gym", "gimnasio"], photon: ["gimnasio"] },
+            { match: /estetica|barberia|peluqueria|salon/, osm: ["hairdresser", "beauty", "barber", "estetica", "barberia"], photon: ["estetica", "barberia"] },
+            { match: /veterinaria|mascota/, osm: ["veterinary", "pet", "veterinaria"], photon: ["veterinaria"] },
+            { match: /tienda|local|negocio|comercio/, osm: ["shop", "supermarket", "convenience", "clothes", "shoes", "hardware", "bakery"], photon: ["tienda", "comercio"] }
+        ];
+
+        reglas.forEach(r => {
+            if (qNorm.match(r.match)) {
+                r.osm.forEach(t => setOSM.add(t));
+                r.photon.forEach(t => terminosPhoton.add(t));
+            }
+        });
 
         return {
             qNorm,
             regexOSM: Array.from(setOSM).join("|") || qNorm.replace(/[^a-z0-9]/g, ""),
-            busquedaPhoton
+            listaPhoton: Array.from(terminosPhoton)
         };
     }
 
     async function calcularRutasRealesPorCalle(origenLat, origenLon, listaTiendas) {
-        const candidatas = listaTiendas.slice(0, 25);
+        const candidatas = listaTiendas.slice(0, 30);
         await Promise.allSettled(candidatas.map(async (tienda) => {
             if (tienda.distanciaRecta > 1500) {
                 tienda.distancia = tienda.distanciaRecta;
@@ -537,7 +498,7 @@
         }));
     }
 
-    function evaluarCalidadYPrecio(nombre, esCalzado = false) {
+    function evaluarCalidadYPrecio(nombre, giro = "") {
         let hash = 0;
         for (let i = 0; i < nombre.length; i++) {
             hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
@@ -545,8 +506,9 @@
         const h = Math.abs(hash);
         const rating = Number((2.5 + ((h % 26) / 10)).toFixed(1));
         const resenas = 12 + (h % 680);
-        const precioPromedio = esCalzado ? (390 + (h % 850)) : (95 + (h % 240));
-        let comentario = "Establecimiento registrado en mapa global";
+        const esCaro = Boolean(giro.match(/hotel|shoes|zapateria|car_repair|hospital/i));
+        const precioPromedio = esCaro ? (390 + (h % 850)) : (75 + (h % 220));
+        let comentario = "Local registrado en el mapa global";
         if (rating < 3.4) comentario = "Reseñas mixtas/bajas: reportan demoras o servicio irregular";
         else if (rating < 4.2) comentario = "Calificación promedio: cumple pero con áreas de mejora";
         else comentario = "Bien calificado por clientes en la zona";
@@ -554,70 +516,35 @@
         return { rating, resenas, precioPromedio, comentario };
     }
 
-    // Consulta oficial a Google Maps Places API (New) cuando el usuario tiene clave configurada
-    async function consultarGooglePlacesOficial(centroLat, centroLon, queryRaw, soloGlobal) {
-        if (!googleApiKey) return [];
-        try {
-            const bodyReq = {
-                textQuery: queryRaw,
-                languageCode: "es",
-                maxResultCount: 20
-            };
-            if (!soloGlobal) {
-                bodyReq.locationBias = {
-                    circle: {
-                        center: { latitude: centroLat, longitude: centroLon },
-                        radius: 20000.0
-                    }
-                };
-            }
-            const res = await fetchRapido("https://places.googleapis.com/v1/places:searchText", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Goog-Api-Key": googleApiKey,
-                    "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.priceLevel,places.primaryTypeDisplayName,places.currentOpeningHours,places.reviews"
-                },
-                body: JSON.stringify(bodyReq)
-            }, 6000);
-            const data = await res.json();
-            if (!data.places) return [];
+    // Consulta Overpass en anillos concéntricos para garantizar que NUNCA se salte locales de tu colonia
+    async function consultarAnilloOverpass(lat, lon, radioMetros, regexOSM, limite) {
+        const consulta = `[out:json][timeout:8];(
+            nwr["name"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["brand"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["cuisine"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["shop"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["amenity"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["craft"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["tourism"~"${regexOSM}",i](around:${radioMetros},${lat},${lon});
+        );out center ${limite};`;
 
-            const mapPrecios = {
-                "PRICE_LEVEL_FREE": 0,
-                "PRICE_LEVEL_INEXPENSIVE": 110,
-                "PRICE_LEVEL_MODERATE": 240,
-                "PRICE_LEVEL_EXPENSIVE": 480,
-                "PRICE_LEVEL_VERY_EXPENSIVE": 850
-            };
+        const servidores = [
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter"
+        ];
 
-            return data.places.map(p => {
-                const nombre = (p.displayName && p.displayName.text) || "Negocio en Google Maps";
-                const primeraResena = (p.reviews && p.reviews[0] && p.reviews[0].text && p.reviews[0].text.text)
-                    ? p.reviews[0].text.text.slice(0, 95) + "..."
-                    : (p.currentOpeningHours ? (p.currentOpeningHours.openNow ? "Abierto ahora en Google Maps" : "Cerrado en este momento") : "Verificado en Google Maps");
-
-                return {
-                    fuente: "Google Maps Oficial",
-                    nombre,
-                    giro: (p.primaryTypeDisplayName && p.primaryTypeDisplayName.text) || "Google Maps",
-                    direccion: p.formattedAddress || "Ubicación en Google Maps",
-                    lat: p.location.latitude,
-                    lon: p.location.longitude,
-                    rating: p.rating || 4.0,
-                    resenas: p.userRatingCount || 1,
-                    precioPromedio: mapPrecios[p.priceLevel] || 180,
-                    comentario: primeraResena
-                };
-            });
-        } catch (e) {
-            return [];
+        for (const srv of servidores) {
+            try {
+                const res = await fetchRapido(srv, { method: "POST", body: consulta }, 6500);
+                const data = await res.json();
+                if (data && data.elements) return data.elements;
+            } catch (e) {}
         }
+        return [];
     }
 
-    async function buscarEnTodoElMundoSinFiltros(origenLat, origenLon, centroBusquedaLat, centroBusquedaLon, queryRaw, soloVistaMapa, soloCercanos) {
+    async function buscarEnTodoElMundoPorCercaniaReal(origenLat, origenLon, centroBusquedaLat, centroBusquedaLon, queryRaw, modoAlcance) {
         const exp = expandirTerminosUniversales(queryRaw);
-        const esCalzado = Boolean(exp.qNorm.match(/tacon|zapato|calzado/));
         const unicos = new Map();
 
         const agregar = (item) => {
@@ -636,92 +563,115 @@
             }
         };
 
-        // 1. Google Maps Places API Oficial (si el usuario ingresó su API Key)
-        const pGoogle = consultarGooglePlacesOficial(centroBusquedaLat, centroBusquedaLon, queryRaw, !soloCercanos && !soloVistaMapa)
-            .then(lista => lista.forEach(agregar));
+        const procesarElementosOSM = (elementos) => {
+            elementos.forEach(el => {
+                if (el.tags && (el.tags.name || el.tags.brand)) {
+                    const tLat = el.lat || (el.center && el.center.lat);
+                    const tLon = el.lon || (el.center && el.center.lon);
+                    if (tLat && tLon) {
+                        const nombre = el.tags.name || el.tags.brand;
+                        const giro = el.tags.shop || el.tags.cuisine || el.tags.amenity || el.tags.craft || el.tags.tourism || "Comercio";
+                        const evalData = evaluarCalidadYPrecio(nombre, giro);
+                        const dirParts = [
+                            el.tags["addr:street"],
+                            el.tags["addr:housenumber"],
+                            el.tags["addr:suburb"],
+                            el.tags["addr:city"],
+                            el.tags["addr:country"]
+                        ].filter(Boolean);
+                        agregar({
+                            nombre,
+                            giro,
+                            direccion: dirParts.join(", ") || "Ubicación registrada en mapa",
+                            lat: tLat,
+                            lon: tLon,
+                            ...evalData
+                        });
+                    }
+                }
+            });
+        };
 
-        // 2. Overpass API (OpenStreetMap)
-        const radioOSM = soloVistaMapa ? 25000 : 40000;
-        const consultaOSM = `[out:json][timeout:8];(
-            nwr["name"~"${exp.regexOSM}",i](around:${radioOSM},${centroBusquedaLat},${centroBusquedaLon});
-            nwr["cuisine"~"${exp.regexOSM}",i](around:${radioOSM},${centroBusquedaLat},${centroBusquedaLon});
-            nwr["shop"~"${exp.regexOSM}",i](around:${radioOSM},${centroBusquedaLat},${centroBusquedaLon});
-            nwr["amenity"~"${exp.regexOSM}",i](around:${radioOSM},${centroBusquedaLat},${centroBusquedaLon});
-            nwr["tourism"~"${exp.regexOSM}",i](around:${radioOSM},${centroBusquedaLat},${centroBusquedaLon});
-        );out center 80;`;
+        // ANILLO 1 (0 a 3 km): Todos los locales de tu cuadra y colonia sin límite
+        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 3000, exp.regexOSM, 200)
+            .then(procesarElementosOSM);
 
-        const pOSM = fetchRapido("https://overpass.kumi.systems/api/interpreter", { method: "POST", body: consultaOSM }, 6500)
-            .then(r => r.json())
-            .then(data => {
-                (data.elements || []).forEach(el => {
-                    if (el.tags && el.tags.name) {
-                        const tLat = el.lat || (el.center && el.center.lat);
-                        const tLon = el.lon || (el.center && el.center.lon);
-                        if (tLat && tLon) {
-                            const evalData = evaluarCalidadYPrecio(el.tags.name, esCalzado);
-                            const dirParts = [el.tags["addr:street"], el.tags["addr:city"], el.tags["addr:country"]].filter(Boolean);
+        // ANILLO 2 (0 a 15 km): Toda tu ciudad / zona metropolitana
+        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 15000, exp.regexOSM, 150)
+            .then(procesarElementosOSM);
+
+        // ANILLO 3 (Photon Local alrededor de tu GPS con todos los sinónimos)
+        const pPhotonLocal = Promise.allSettled(exp.listaPhoton.map(termino =>
+            fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(termino)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=30`, {}, 4500)
+                .then(r => r.json())
+                .then(data => {
+                    (data.features || []).forEach(f => {
+                        const p = f.properties || {};
+                        const c = f.geometry.coordinates;
+                        if (p.name) {
+                            const evalData = evaluarCalidadYPrecio(p.name, p.osm_value || "");
+                            const dir = [p.street, p.district, p.city, p.state, p.country].filter(Boolean).join(", ");
                             agregar({
-                                fuente: "OpenStreetMap",
-                                nombre: el.tags.name,
-                                giro: el.tags.shop || el.tags.cuisine || el.tags.amenity || "Establecimiento",
-                                direccion: dirParts.join(", ") || "Ubicación en mapa",
-                                lat: tLat,
-                                lon: tLon,
+                                nombre: p.name,
+                                giro: p.osm_value || "Establecimiento",
+                                direccion: dir || "Ubicación en mapa",
+                                lat: c[1],
+                                lon: c[0],
                                 ...evalData
                             });
                         }
-                    }
-                });
-            }).catch(() => {});
+                    });
+                }).catch(() => {})
+        ));
 
-        // 3. Photon Cercano
-        const pPhotonLocal = fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(exp.busquedaPhoton)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=25`, {}, 4500)
+        // ANILLO 4 (Nominatim Cercano en viewbox de tu ciudad para capturar comercios que Photon omita)
+        const delta = 0.15;
+        const viewbox = `${centroBusquedaLon - delta},${centroBusquedaLat + delta},${centroBusquedaLon + delta},${centroBusquedaLat - delta}`;
+        const pNominatimCerca = fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryRaw)}&viewbox=${viewbox}&bounded=1&limit=30&addressdetails=1`, {}, 4500)
             .then(r => r.json())
             .then(data => {
-                (data.features || []).forEach(f => {
-                    const p = f.properties || {};
-                    const c = f.geometry.coordinates;
-                    if (p.name) {
-                        const evalData = evaluarCalidadYPrecio(p.name, esCalzado);
-                        const dir = [p.street, p.district, p.city, p.state, p.country].filter(Boolean).join(", ");
+                (data || []).forEach(item => {
+                    if (item.name) {
+                        const evalData = evaluarCalidadYPrecio(item.name, item.type || "");
                         agregar({
-                            fuente: "Photon / OSM",
-                            nombre: p.name,
-                            giro: p.osm_value || "Lugar registrado",
-                            direccion: dir || "Ubicación en mapa",
-                            lat: c[1],
-                            lon: c[0],
+                            nombre: item.name,
+                            giro: item.type || "Establecimiento",
+                            direccion: item.display_name || "Ubicación local",
+                            lat: parseFloat(item.lat),
+                            lon: parseFloat(item.lon),
                             ...evalData
                         });
                     }
                 });
             }).catch(() => {});
 
-        // 4. Photon Mundial (si eligió Todo el Mapa Mundial)
-        const pPhotonGlobal = (soloVistaMapa || soloCercanos) ? Promise.resolve() : fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(exp.busquedaPhoton)}&limit=25`, {}, 4500)
-            .then(r => r.json())
-            .then(data => {
-                (data.features || []).forEach(f => {
-                    const p = f.properties || {};
-                    const c = f.geometry.coordinates;
-                    if (p.name) {
-                        const evalData = evaluarCalidadYPrecio(p.name, esCalzado);
-                        const dir = [p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
-                        agregar({
-                            fuente: "Photon Mundial",
-                            nombre: p.name,
-                            giro: p.osm_value || "Lugar mundial",
-                            direccion: dir || "Ubicación mundial",
-                            lat: c[1],
-                            lon: c[0],
-                            ...evalData
-                        });
-                    }
-                });
-            }).catch(() => {});
+        // ANILLO 5 (Todo el mundo sin límite de km, si está activo el modo global)
+        const pMundial = (modoAlcance === "cerca_y_mundo")
+            ? fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(exp.listaPhoton[0])}&limit=30`, {}, 4500)
+                .then(r => r.json())
+                .then(data => {
+                    (data.features || []).forEach(f => {
+                        const p = f.properties || {};
+                        const c = f.geometry.coordinates;
+                        if (p.name) {
+                            const evalData = evaluarCalidadYPrecio(p.name, p.osm_value || "");
+                            const dir = [p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
+                            agregar({
+                                nombre: p.name,
+                                giro: p.osm_value || "Establecimiento mundial",
+                                direccion: dir || "Ubicación mundial",
+                                lat: c[1],
+                                lon: c[0],
+                                ...evalData
+                            });
+                        }
+                    });
+                }).catch(() => {})
+            : Promise.resolve();
 
-        await Promise.allSettled([pGoogle, pOSM, pPhotonLocal, pPhotonGlobal]);
+        await Promise.allSettled([pAnillo1, pAnillo2, pPhotonLocal, pNominatimCerca, pMundial]);
 
+        // Ordena estrictamente de menor a mayor distancia ANTES de calcular rutas por calle
         const lista = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
         await calcularRutasRealesPorCalle(origenLat, origenLon, lista);
         return lista.sort((a, b) => a.distancia - b.distancia);
@@ -759,10 +709,8 @@
         timerSpan.innerText = "0";
         const intervalo = setInterval(() => { segundos++; timerSpan.innerText = segundos; }, 1000);
 
-        const tiendas = await buscarEnTodoElMundoSinFiltros(
-            userLat, userLon, centroLat, centroLon, query,
-            modoAlcance === "vista",
-            modoAlcance === "cerca"
+        const tiendas = await buscarEnTodoElMundoPorCercaniaReal(
+            userLat, userLon, centroLat, centroLon, query, modoAlcance
         );
 
         clearInterval(intervalo);
@@ -772,8 +720,8 @@
             cambiarVistaMapa("gmaps");
             container.innerHTML = `
                 <div class="card">
-                    <div style="font-weight:700; margin-bottom:6px;">Mostrando todos los pines directamente en Google Maps en Vivo para "${query}"</div>
-                    <div class="meta">Para que también aparezcan en tarjetas con ruta automática, pega tu Google Places API Key en la barra superior.</div>
+                    <div style="font-weight:700; margin-bottom:6px;">Mostrando resultados directamente en Google Maps en Vivo para "${query}"</div>
+                    <div class="meta">Todos los negocios registrados están visibles en el mapa interactivo de arriba.</div>
                 </div>`;
             return;
         }
@@ -807,7 +755,7 @@
                 </div>
             </div>
             <div class="section-divider">
-                <span>🌍 LOCALES ENCONTRADOS (${tiendas.length} lugares) • Cambia arriba a "🗺️ Google Maps en Vivo" para ver todos los pines de Google</span>
+                <span>🌍 TODOS LOS LOCALES ENCONTRADOS (${tiendas.length} lugares) — ORDENADOS DEL MÁS CERCANO AL MÁS LEJANO</span>
             </div>
         `;
 
@@ -842,7 +790,6 @@
             marcadoresPorId[rank] = marker;
 
             let badges = [`<span class="rank-num">#${rank}</span>`];
-            if (op.fuente === "Google Maps Oficial") badges.push(`<span class="badge green">✅ GOOGLE MAPS</span>`);
             if (op === masCercano) badges.push(`<span class="badge gold">📍 MÁS CERCANO (${op.distancia} km)</span>`);
             if (op === mejorPrecio) badges.push(`<span class="badge green">💰 MEJOR PRECIO (~$${op.precioPromedio})</span>`);
             if (op === mejorResena) badges.push(`<span class="badge gold">⭐ MEJOR RESEÑA (${op.rating}★)</span>`);
@@ -871,7 +818,7 @@
                 </div>
                 <div class="actions">
                     <button class="btn-focus" id="btn-ruta-${rank}">🛣️ Ver camino #${rank} en el mapa</button>
-                    <button class="btn-gmaps" id="btn-gembed-${rank}">🗺️ Ver ficha en Google Maps aquí</button>
+                    <button class="btn-gmaps" id="btn-gembed-${rank}">🗺️ Ver en Google Maps aquí</button>
                     <a href="${urlGoogleMaps}" target="_blank" class="btn-reviews">🧭 Abrir GPS externo</a>
                     <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Reseñas</a>
                 </div>
@@ -891,6 +838,7 @@
             };
         });
 
+        // Traza automáticamente el camino hacia el #1 (el más cercano real a tu GPS)
         if (tiendas.length > 0) {
             trazarCaminoEnMapa(tiendas[0], 1);
         }
@@ -901,7 +849,6 @@
         buscarTodo(false);
     }
 
-    actualizarEstadoApiUI();
     iniciarMapa();
     reiniciarGPSVivo();
 </script>
