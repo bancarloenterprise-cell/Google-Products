@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Earth & Maps - Todos los Locales del Mundo</title>
+    <title>OmniLocal Global - Mapa Único de Rutas y Cobertura Mundial</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -39,33 +39,24 @@
         .quick-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
         .chip { background: #e8eaed; border: none; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; color: #3c4043; font-weight: 500; }
 
-        .map-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-        .tab-btn {
-            flex: 1; min-width: 125px; padding: 9px 10px; border-radius: 10px; border: 1px solid #dadce0;
-            background: white; color: #3c4043; font-size: 12.5px; font-weight: 700; cursor: pointer;
-        }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .tab-btn.earth-tab.active { background: #202124; border-color: #202124; color: white; }
-        .tab-btn.gmaps-tab.active { background: #188038; border-color: #188038; color: white; }
-
         .map-wrapper { position: relative; margin-bottom: 10px; }
-        #mapContainer, #gmapsFrameContainer {
-            width: 100%; height: 360px; border-radius: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #dadce0; z-index: 1;
-            overflow: hidden; background: white;
+        #mapContainer {
+            width: 100%; height: 370px; border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12); border: 1px solid #dadce0; z-index: 1;
         }
-        #gmapsFrameContainer { display: none; }
-        #gmapsIframe { width: 100%; height: 100%; border: none; }
-
-        .btn-search-area {
+        .map-overlay-top {
             position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 500;
-            background: white; color: #202124; border: 1px solid #dadce0; padding: 8px 14px;
-            border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: flex; gap: 6px; flex-wrap: nowrap;
         }
+        .btn-map-float {
+            background: white; color: #202124; border: 1px solid #dadce0; padding: 7px 12px;
+            border-radius: 20px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.22); white-space: nowrap;
+        }
+        .btn-map-float.active-layer { background: #202124; color: white; border-color: #202124; }
 
         .free-key-bar {
-            background: #f1f3f4; border: 1px solid #dadce0; border-radius: 10px; padding: 8px 12px;
+            background: white; border: 1px solid #dadce0; border-radius: 10px; padding: 8px 12px;
             margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
             flex-wrap: wrap; gap: 6px; font-size: 12px; color: #3c4043;
         }
@@ -73,7 +64,7 @@
             padding: 5px 9px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; min-width: 190px;
         }
         .free-key-bar button {
-            background: #202124; color: white; border: none; padding: 5px 10px; border-radius: 6px;
+            background: #188038; color: white; border: none; padding: 6px 11px; border-radius: 6px;
             font-size: 11.5px; font-weight: 700; cursor: pointer;
         }
 
@@ -141,7 +132,7 @@
         .meta { margin-top: 8px; font-size: 0.9rem; color: #4d5156; line-height: 1.6; }
         .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-focus { background: #1a73e8; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .btn-gmaps { text-decoration: none; background: #188038; color: white; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-gmaps { text-decoration: none; background: #188038; color: white; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
         .btn-reviews { text-decoration: none; background: #f1f3f4; color: #202124; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
 
         @keyframes pulseGPS {
@@ -160,7 +151,7 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">Satélite Earth HD + Google Maps en Vivo + Todos los Locales del Mundo</div>
+        <div class="subtitle">Mapa Único de Rutas • Barrido Mundial desde tu Cuadra hasta todo el Planeta</div>
     </header>
 
     <div class="gps-bar">
@@ -192,26 +183,20 @@
         <button class="chip" onclick="buscarRapido('hotel')">🏨 Hotel</button>
     </div>
 
-    <div class="map-tabs">
-        <button id="tabBtnCalles" class="tab-btn active" onclick="cambiarVistaMapa('calles')">🛣️ Mapa Calles y Rutas</button>
-        <button id="tabBtnEarth" class="tab-btn earth-tab" onclick="cambiarVistaMapa('earth')">🛰️ Satélite Earth HD</button>
-        <button id="tabBtnGmaps" class="tab-btn gmaps-tab" onclick="cambiarVistaMapa('gmaps')">🗺️ Google Maps en Vivo</button>
-        <button id="tabBtnAmbos" class="tab-btn" onclick="cambiarVistaMapa('ambos')">🔀 Ver Satélite + Google Maps</button>
-    </div>
-
     <div class="map-wrapper">
-        <button id="btnSearchArea" class="btn-search-area" onclick="buscarEnVistaActualDelMapa()">🌍 Buscar en esta zona del mapa</button>
+        <div class="map-overlay-top">
+            <button class="btn-map-float" onclick="buscarEnVistaActualDelMapa()">🌍 Buscar en esta zona</button>
+            <button id="btnCapaCalles" class="btn-map-float active-layer" onclick="cambiarCapaMapa('calles')">🗺️ Calles</button>
+            <button id="btnCapaGoogle" class="btn-map-float" onclick="cambiarCapaMapa('google')">📍 Google</button>
+            <button id="btnCapaSatelite" class="btn-map-float" onclick="cambiarCapaMapa('satelite')">🛰️ Satélite</button>
+        </div>
         <div id="mapContainer"></div>
     </div>
 
-    <div id="gmapsFrameContainer">
-        <iframe id="gmapsIframe" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-    </div>
-
     <div class="free-key-bar">
-        <span id="geoapifyStatus">🆓 <b>Ampliador gratuito sin tarjeta (Geoapify):</b> Opcional para sumar aún más comercios a la lista</span>
+        <span id="geoapifyStatus">🆓 <b>Geoapify Places API (Gratis sin tarjeta, 3,000 búsquedas/día):</b> Pega tu clave para sumar hasta 100 locales extra por zona</span>
         <div style="display:flex; gap:5px; flex-wrap:wrap;">
-            <input type="text" id="geoapifyKeyInput" placeholder="Pega API Key gratuita de Geoapify (opcional)">
+            <input type="text" id="geoapifyKeyInput" placeholder="Pega API Key gratuita de Geoapify">
             <button onclick="guardarGeoapifyKey()">Activar</button>
         </div>
     </div>
@@ -234,9 +219,8 @@
     let seguirCamara = true;
     let watchId = null;
     let mapa = null;
-    let capaBaseCalles = null;
-    let capaBaseSatelite = null;
-    let capaEtiquetasSatelite = null;
+    let capaActual = null;
+    let capaEtiquetas = null;
     let marcadorUsuario = null;
     let circuloPrecision = null;
     let capaTiendas = null;
@@ -245,7 +229,7 @@
 
     if (geoapifyKey) {
         document.getElementById("geoapifyKeyInput").value = geoapifyKey;
-        document.getElementById("geoapifyStatus").innerHTML = "✅ <b>Motor Geoapify Gratuito Activo:</b> Sumando comercios extra en cada búsqueda.";
+        document.getElementById("geoapifyStatus").innerHTML = "✅ <b>Geoapify Places API Activa:</b> Extrayendo comercios mundiales adicionales en cada búsqueda.";
     }
 
     function guardarGeoapifyKey() {
@@ -253,92 +237,46 @@
         geoapifyKey = val;
         if (val) {
             localStorage.setItem("omnilocal_geoapify_key", val);
-            document.getElementById("geoapifyStatus").innerHTML = "✅ <b>Motor Geoapify Gratuito Activo:</b> Sumando comercios extra en cada búsqueda.";
+            document.getElementById("geoapifyStatus").innerHTML = "✅ <b>Geoapify Places API Activa:</b> Extrayendo comercios mundiales adicionales en cada búsqueda.";
         } else {
             localStorage.removeItem("omnilocal_geoapify_key");
-            document.getElementById("geoapifyStatus").innerHTML = "🆓 <b>Ampliador gratuito sin tarjeta (Geoapify):</b> Opcional para sumar aún más comercios a la lista";
+            document.getElementById("geoapifyStatus").innerHTML = "🆓 <b>Geoapify Places API (Gratis sin tarjeta, 3,000 búsquedas/día):</b> Pega tu clave para sumar hasta 100 locales extra por zona";
         }
     }
 
-    function cambiarVistaMapa(modo) {
-        const mapEl = document.getElementById("mapContainer");
-        const btnArea = document.getElementById("btnSearchArea");
-        const gmapsEl = document.getElementById("gmapsFrameContainer");
-
-        ["tabBtnCalles", "tabBtnEarth", "tabBtnGmaps", "tabBtnAmbos"].forEach(id => {
-            document.getElementById(id).classList.remove("active");
+    function cambiarCapaMapa(tipo) {
+        if (!mapa) return;
+        ["btnCapaCalles", "btnCapaGoogle", "btnCapaSatelite"].forEach(id => {
+            document.getElementById(id).classList.remove("active-layer");
         });
 
-        if (modo === "calles") {
-            mapEl.style.display = "block";
-            btnArea.style.display = "block";
-            gmapsEl.style.display = "none";
-            document.getElementById("tabBtnCalles").classList.add("active");
-            if (mapa) {
-                mapa.removeLayer(capaBaseSatelite);
-                mapa.removeLayer(capaEtiquetasSatelite);
-                capaBaseCalles.addTo(mapa);
-                setTimeout(() => mapa.invalidateSize(), 100);
-            }
-        } else if (modo === "earth") {
-            mapEl.style.display = "block";
-            btnArea.style.display = "block";
-            gmapsEl.style.display = "none";
-            document.getElementById("tabBtnEarth").classList.add("active");
-            if (mapa) {
-                mapa.removeLayer(capaBaseCalles);
-                capaBaseSatelite.addTo(mapa);
-                capaEtiquetasSatelite.addTo(mapa);
-                setTimeout(() => mapa.invalidateSize(), 100);
-            }
-        } else if (modo === "gmaps") {
-            mapEl.style.display = "none";
-            btnArea.style.display = "none";
-            gmapsEl.style.display = "block";
-            document.getElementById("tabBtnGmaps").classList.add("active");
-            actualizarIframeGoogleMaps(document.getElementById("queryInput").value.trim() || "negocios");
-        } else {
-            mapEl.style.display = "block";
-            btnArea.style.display = "block";
-            gmapsEl.style.display = "block";
-            document.getElementById("tabBtnAmbos").classList.add("active");
-            if (mapa) {
-                mapa.removeLayer(capaBaseCalles);
-                capaBaseSatelite.addTo(mapa);
-                capaEtiquetasSatelite.addTo(mapa);
-                setTimeout(() => mapa.invalidateSize(), 100);
-            }
-            actualizarIframeGoogleMaps(document.getElementById("queryInput").value.trim() || "negocios");
+        if (capaActual) mapa.removeLayer(capaActual);
+        if (capaEtiquetas) {
+            mapa.removeLayer(capaEtiquetas);
+            capaEtiquetas = null;
         }
-    }
 
-    function actualizarIframeGoogleMaps(query, destLat = null, destLon = null) {
-        const iframe = document.getElementById("gmapsIframe");
-        const lat = userLat || 20.535;
-        const lon = userLon || -100.435;
-        if (destLat && destLon) {
-            iframe.src = `https://maps.google.com/maps?q=${destLat},${destLon}&z=16&output=embed`;
+        if (tipo === "calles") {
+            document.getElementById("btnCapaCalles").classList.add("active-layer");
+            capaActual = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(mapa);
+        } else if (tipo === "google") {
+            document.getElementById("btnCapaGoogle").classList.add("active-layer");
+            capaActual = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                attribution: '© Google Maps'
+            }).addTo(mapa);
         } else {
-            iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&ll=${lat},${lon}&z=14&output=embed`;
+            document.getElementById("btnCapaSatelite").classList.add("active-layer");
+            capaActual = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                attribution: '© Google Satélite'
+            }).addTo(mapa);
         }
     }
 
     function iniciarMapa() {
         mapa = L.map('mapContainer', { worldCopyJump: true }).setView([20.535, -100.435], 13);
-
-        capaBaseCalles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        });
-
-        capaBaseSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri Earth Satellite'
-        });
-
-        capaEtiquetasSatelite = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Etiquetas'
-        });
-
-        capaBaseCalles.addTo(mapa);
+        cambiarCapaMapa("calles");
         capaTiendas = L.layerGroup().addTo(mapa);
         capaRuta = L.layerGroup().addTo(mapa);
 
@@ -365,7 +303,6 @@
             marcadorUsuario = L.marker([userLat, userLon], {
                 icon: iconoAzul, draggable: false, interactive: false, zIndexOffset: 1000
             }).addTo(mapa);
-            actualizarIframeGoogleMaps("restaurantes y tiendas");
         } else {
             marcadorUsuario.setLatLng([userLat, userLon]);
         }
@@ -502,42 +439,39 @@
         const palabras = qNorm.split(/\s+/).filter(Boolean);
         const setOSM = new Set(palabras.map(p => p.replace(/[^a-z0-9]/g, "")).filter(p => p.length > 2));
         const terminosPhoton = new Set([queryRaw.trim()]);
+        let categoriaGeoapify = "commercial,catering,service,healthcare,accommodation,leisure";
 
         const reglas = [
-            { match: /restaurante|comida|comer|fonda|cocina/, osm: ["restaurant", "fast_food", "food_court", "cafe", "restaurante", "cocina", "fonda"], photon: ["restaurante", "restaurant"] },
-            { match: /hamburguesa|burger/, osm: ["burger", "hamburguesa", "burgers", "fast_food"], photon: ["hamburguesa", "burger"] },
-            { match: /taco|taqueria|pastor|birria/, osm: ["taco", "taqueria", "birria", "mexican"], photon: ["tacos", "taqueria"] },
-            { match: /pizza|pizzeria/, osm: ["pizza", "pizzeria", "italian"], photon: ["pizza", "pizzeria"] },
-            { match: /cafe|cafeteria|coffee/, osm: ["cafe", "coffee", "cafeteria", "bakery"], photon: ["cafeteria", "cafe"] },
-            { match: /pan|panaderia|pastel|pasteleria/, osm: ["bakery", "pastry", "panaderia", "pasteleria"], photon: ["panaderia", "pasteleria"] },
-            { match: /tacon|zapato|zapatilla|calzado|zapateria|bota|tenis/, osm: ["shoes", "zapateria", "calzado", "zapatos", "department_store"], photon: ["zapateria", "calzado"] },
-            { match: /ropa|boutique|tienda de ropa|moda/, osm: ["clothes", "fashion", "boutique", "department_store", "ropa"], photon: ["tienda de ropa", "boutique"] },
-            { match: /farmacia|medicina|botica/, osm: ["pharmacy", "chemist", "farmacia"], photon: ["farmacia"] },
-            { match: /hospital|clinica|doctor|medico|consultorio/, osm: ["hospital", "clinic", "doctors", "pharmacy", "clinica"], photon: ["clinica", "hospital"] },
-            { match: /dentista|dental/, osm: ["dentist", "dental"], photon: ["dentista"] },
-            { match: /super|supermercado|abarrotes|tienda|oxxo/, osm: ["supermarket", "convenience", "grocery", "department_store", "abarrotes", "oxxo"], photon: ["supermercado", "tienda"] },
-            { match: /ferreteria|tlapaleria|herramienta|materiales/, osm: ["hardware", "doityourself", "ferreteria", "tlapaleria"], photon: ["ferreteria"] },
-            { match: /taller|mecanico|llanta|llantera|auto/, osm: ["car_repair", "tyres", "car_parts", "taller", "llantera"], photon: ["taller mecanico"] },
-            { match: /gasolinera|gasolina/, osm: ["fuel", "gasolinera", "pemex"], photon: ["gasolinera"] },
-            { match: /banco|cajero/, osm: ["bank", "atm", "banco"], photon: ["banco"] },
-            { match: /hotel|motel|hospedaje|hostal/, osm: ["hotel", "motel", "hostel", "guest_house"], photon: ["hotel"] },
-            { match: /gimnasio|gym/, osm: ["fitness_centre", "sports_centre", "gym", "gimnasio"], photon: ["gimnasio"] },
-            { match: /estetica|barberia|peluqueria|salon/, osm: ["hairdresser", "beauty", "barber", "estetica", "barberia"], photon: ["estetica", "barberia"] },
-            { match: /veterinaria|mascota/, osm: ["veterinary", "pet", "veterinaria"], photon: ["veterinaria"] },
-            { match: /tienda|local|negocio|comercio/, osm: ["shop", "supermarket", "convenience", "clothes", "shoes", "hardware", "bakery"], photon: ["tienda", "comercio"] }
+            { match: /restaurante|comida|comer|fonda|cocina/, osm: ["restaurant", "fast_food", "food_court", "cafe", "restaurante", "cocina", "fonda"], photon: ["restaurante", "restaurant"], geo: "catering" },
+            { match: /hamburguesa|burger/, osm: ["burger", "hamburguesa", "burgers", "fast_food"], photon: ["hamburguesa", "burger"], geo: "catering.fast_food,catering.restaurant" },
+            { match: /taco|taqueria|pastor|birria/, osm: ["taco", "taqueria", "birria", "mexican"], photon: ["tacos", "taqueria"], geo: "catering.restaurant,catering.fast_food" },
+            { match: /pizza|pizzeria/, osm: ["pizza", "pizzeria", "italian"], photon: ["pizza", "pizzeria"], geo: "catering.restaurant,catering.fast_food" },
+            { match: /cafe|cafeteria|coffee/, osm: ["cafe", "coffee", "cafeteria", "bakery"], photon: ["cafeteria", "cafe"], geo: "catering.cafe" },
+            { match: /pan|panaderia|pastel|pasteleria/, osm: ["bakery", "pastry", "panaderia", "pasteleria"], photon: ["panaderia", "pasteleria"], geo: "commercial.food_and_drink.bakery" },
+            { match: /tacon|zapato|zapatilla|calzado|zapateria|bota|tenis/, osm: ["shoes", "zapateria", "calzado", "zapatos", "department_store"], photon: ["zapateria", "calzado"], geo: "commercial.clothing.shoes,commercial.shopping_mall" },
+            { match: /ropa|boutique|tienda de ropa|moda/, osm: ["clothes", "fashion", "boutique", "department_store", "ropa"], photon: ["tienda de ropa", "boutique"], geo: "commercial.clothing" },
+            { match: /farmacia|medicina|botica/, osm: ["pharmacy", "chemist", "farmacia"], photon: ["farmacia"], geo: "healthcare.pharmacy" },
+            { match: /hospital|clinica|doctor|medico|consultorio/, osm: ["hospital", "clinic", "doctors", "pharmacy", "clinica"], photon: ["clinica", "hospital"], geo: "healthcare" },
+            { match: /super|supermercado|abarrotes|tienda|oxxo/, osm: ["supermarket", "convenience", "grocery", "department_store", "abarrotes", "oxxo"], photon: ["supermercado", "tienda"], geo: "commercial.supermarket,commercial.convenience" },
+            { match: /ferreteria|tlapaleria|herramienta|materiales/, osm: ["hardware", "doityourself", "ferreteria", "tlapaleria"], photon: ["ferreteria"], geo: "commercial.hardware_and_tools" },
+            { match: /taller|mecanico|llanta|llantera|auto/, osm: ["car_repair", "tyres", "car_parts", "taller", "llantera"], photon: ["taller mecanico"], geo: "service.vehicle" },
+            { match: /hotel|motel|hospedaje|hostal/, osm: ["hotel", "motel", "hostel", "guest_house"], photon: ["hotel"], geo: "accommodation" },
+            { match: /tienda|local|negocio|comercio/, osm: ["shop", "supermarket", "convenience", "clothes", "shoes", "hardware", "bakery"], photon: ["tienda", "comercio"], geo: "commercial" }
         ];
 
         reglas.forEach(r => {
             if (qNorm.match(r.match)) {
                 r.osm.forEach(t => setOSM.add(t));
                 r.photon.forEach(t => terminosPhoton.add(t));
+                categoriaGeoapify = r.geo;
             }
         });
 
         return {
             qNorm,
             regexOSM: Array.from(setOSM).join("|") || qNorm.replace(/[^a-z0-9]/g, ""),
-            listaPhoton: Array.from(terminosPhoton)
+            listaPhoton: Array.from(terminosPhoton),
+            categoriaGeoapify
         };
     }
 
@@ -664,15 +598,11 @@
             });
         };
 
-        // ANILLO 1 (0 a 3 km): Todos los locales de tu cuadra y colonia
-        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 3000, exp.regexOSM, 200)
-            .then(procesarElementosOSM);
+        // 1. Overpass Anillo 1 (0 a 3 km) y Anillo 2 (0 a 15 km)
+        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 3000, exp.regexOSM, 200).then(procesarElementosOSM);
+        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 15000, exp.regexOSM, 150).then(procesarElementosOSM);
 
-        // ANILLO 2 (0 a 15 km): Toda tu ciudad
-        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 15000, exp.regexOSM, 150)
-            .then(procesarElementosOSM);
-
-        // ANILLO 3: Photon Local
+        // 2. Photon Local
         const pPhotonLocal = Promise.allSettled(exp.listaPhoton.map(termino =>
             fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(termino)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=30`, {}, 4500)
                 .then(r => r.json())
@@ -696,7 +626,7 @@
                 }).catch(() => {})
         ));
 
-        // ANILLO 4: Nominatim Cercano en tu ciudad
+        // 3. Nominatim Cercano en tu ciudad
         const delta = 0.15;
         const viewbox = `${centroBusquedaLon - delta},${centroBusquedaLat + delta},${centroBusquedaLon + delta},${centroBusquedaLat - delta}`;
         const pNominatimCerca = fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryRaw)}&viewbox=${viewbox}&bounded=1&limit=30&addressdetails=1`, {}, 4500)
@@ -717,9 +647,30 @@
                 });
             }).catch(() => {});
 
-        // ANILLO 5: Geoapify Gratuito (si el usuario activó su clave gratuita)
-        const pGeoapify = geoapifyKey
-            ? fetchRapido(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(queryRaw)}&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=30&apiKey=${encodeURIComponent(geoapifyKey)}`, {}, 4500)
+        // 4. Geoapify Places API v2 + Geocoding API (cuando el usuario tiene clave gratuita)
+        const pGeoapifyPlaces = geoapifyKey
+            ? fetchRapido(`https://api.geoapify.com/v2/places?categories=${encodeURIComponent(exp.categoriaGeoapify)}&filter=circle:${centroBusquedaLon},${centroBusquedaLat},15000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=60&apiKey=${encodeURIComponent(geoapifyKey)}`, {}, 5000)
+                .then(r => r.json())
+                .then(data => {
+                    (data.features || []).forEach(f => {
+                        const p = f.properties || {};
+                        if (p.name && p.lat && p.lon) {
+                            const evalData = evaluarCalidadYPrecio(p.name, (p.categories && p.categories[0]) || "");
+                            agregar({
+                                nombre: p.name,
+                                giro: (p.categories && p.categories[p.categories.length - 1]) || "Comercio",
+                                direccion: p.formatted || "Ubicación verificada",
+                                lat: p.lat,
+                                lon: p.lon,
+                                ...evalData
+                            });
+                        }
+                    });
+                }).catch(() => {})
+            : Promise.resolve();
+
+        const pGeoapifyText = geoapifyKey
+            ? fetchRapido(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(queryRaw)}&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=40&apiKey=${encodeURIComponent(geoapifyKey)}`, {}, 5000)
                 .then(r => r.json())
                 .then(data => {
                     (data.features || []).forEach(f => {
@@ -739,7 +690,7 @@
                 }).catch(() => {})
             : Promise.resolve();
 
-        // ANILLO 6: Todo el mundo sin límite de km
+        // 5. Todo el mundo sin límite de km
         const pMundial = (modoAlcance === "cerca_y_mundo")
             ? fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(exp.listaPhoton[0])}&limit=30`, {}, 4500)
                 .then(r => r.json())
@@ -763,7 +714,7 @@
                 }).catch(() => {})
             : Promise.resolve();
 
-        await Promise.allSettled([pAnillo1, pAnillo2, pPhotonLocal, pNominatimCerca, pGeoapify, pMundial]);
+        await Promise.allSettled([pAnillo1, pAnillo2, pPhotonLocal, pNominatimCerca, pGeoapifyPlaces, pGeoapifyText, pMundial]);
 
         const lista = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
         await calcularRutasRealesPorCalle(origenLat, origenLon, lista);
@@ -781,8 +732,6 @@
             alert("Esperando señal GPS satelital de tu dispositivo.");
             return;
         }
-
-        actualizarIframeGoogleMaps(query);
 
         const modoAlcance = forzarVistaMapa ? "vista" : document.getElementById("alcanceSelect").value;
         const centroMapa = mapa ? mapa.getCenter() : { lat: userLat, lng: userLon };
@@ -810,11 +759,10 @@
         loader.style.display = "none";
 
         if (tiendas.length === 0) {
-            cambiarVistaMapa("gmaps");
             container.innerHTML = `
                 <div class="card">
-                    <div style="font-weight:700; margin-bottom:6px;">Mostrando resultados directamente en Google Maps en Vivo para "${query}"</div>
-                    <div class="meta">Todos los negocios registrados están visibles en el mapa interactivo de arriba.</div>
+                    <div style="font-weight:700; margin-bottom:6px;">No aparecieron resultados para "${query}"</div>
+                    <div class="meta">Prueba con otra palabra clave, activa la capa "📍 Google" en el mapa o mueve el mapa y toca "🌍 Buscar en esta zona".</div>
                 </div>`;
             return;
         }
@@ -911,25 +859,15 @@
                 </div>
                 <div class="actions">
                     <button class="btn-focus" id="btn-ruta-${rank}">🛣️ Ver camino #${rank} en el mapa</button>
-                    <button class="btn-gmaps" id="btn-gembed-${rank}">🗺️ Ver en Google Maps aquí</button>
-                    <a href="${urlGoogleMaps}" target="_blank" class="btn-reviews">🧭 Abrir GPS externo</a>
-                    <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Reseñas</a>
+                    <a href="${urlGoogleMaps}" target="_blank" class="btn-gmaps">🧭 Cómo llegar (Google Maps)</a>
+                    <a href="${urlVerResenas}" target="_blank" class="btn-reviews">💬 Ver reseñas</a>
                 </div>
             `;
             container.appendChild(cardEl);
 
             document.getElementById(`btn-ruta-${rank}`).onclick = () => {
-                if (document.getElementById("mapContainer").style.display === "none") {
-                    cambiarVistaMapa("calles");
-                }
                 trazarCaminoEnMapa(op, rank);
                 document.getElementById("mapContainer").scrollIntoView({ behavior: "smooth", block: "center" });
-            };
-
-            document.getElementById(`btn-gembed-${rank}`).onclick = () => {
-                cambiarVistaMapa("gmaps");
-                actualizarIframeGoogleMaps(op.nombre, op.lat, op.lon);
-                document.getElementById("gmapsFrameContainer").scrollIntoView({ behavior: "smooth", block: "center" });
             };
         });
 
