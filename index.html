@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLocal Global - Buscador de Locales Reales por Producto y Giro</title>
+    <title>OmniLocal - Búsqueda Real por Producto, Marca y Cercanía Exacta</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -150,14 +150,14 @@
 <div class="container">
     <header>
         <h1>OmniLocal</h1>
-        <div class="subtitle">Solo Locales y Establecimientos Reales (Sin Calles) • Todos los Giros • Prioridad en tu Ciudad y Estado</div>
+        <div class="subtitle">Locales Reales donde SÍ Venden el Producto • Cercanía Exacta desde tu Ubicación (0 m → tu ciudad → tu estado)</div>
     </header>
 
     <div class="gps-bar">
         <span id="gpsText">🛰️ Activando antena GPS satelital...</span>
         <div class="gps-actions">
             <select id="alcanceSelect" class="radius-select">
-                <option value="estado_y_cerca" selected>📍 Mi ciudad y estado primero (hasta 50 km)</option>
+                <option value="mi_zona_y_estado" selected>📍 Enfrente de mí → mi ciudad → mi estado</option>
                 <option value="cerca_y_mundo">🌍 Mi estado primero → luego todo el mundo</option>
                 <option value="vista">🗺️ Solo en la vista actual del mapa</option>
             </select>
@@ -167,18 +167,18 @@
     </div>
 
     <div class="search-box">
-        <input type="text" id="queryInput" placeholder="Busca cualquier producto o servicio: regaderas, taladros, bancos, camisas, paletas, taller, farmacia..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
+        <input type="text" id="queryInput" placeholder="Busca productos o marcas: iPhone, BBB, Tiendas 3B, regaderas, bancos, paletas, farmacia..." onkeyup="if(event.key==='Enter') buscarTodo(false)">
         <button onclick="buscarTodo(false)">Buscar</button>
     </div>
 
     <div class="quick-tags">
+        <button class="chip" onclick="buscarRapido('iPhone')">📱 iPhone</button>
+        <button class="chip" onclick="buscarRapido('BBB')">🛒 Tiendas 3B (BBB)</button>
         <button class="chip" onclick="buscarRapido('regaderas')">🚿 Regaderas</button>
         <button class="chip" onclick="buscarRapido('bancos')">🏦 Bancos</button>
-        <button class="chip" onclick="buscarRapido('ferreterias')">🔨 Ferreterías</button>
         <button class="chip" onclick="buscarRapido('paletas')">🍦 Paletas</button>
         <button class="chip" onclick="buscarRapido('camisas')">👔 Camisas</button>
         <button class="chip" onclick="buscarRapido('farmacia')">💊 Farmacia</button>
-        <button class="chip" onclick="buscarRapido('supermercado')">🛒 Súper</button>
         <button class="chip" onclick="buscarRapido('taller')">🔧 Taller</button>
     </div>
 
@@ -194,7 +194,7 @@
 
     <div id="routeBanner" class="route-banner"></div>
 
-    <div id="loader" class="loader">🌍 Buscando locales reales en tu ciudad y estado donde vendan este producto/servicio... (<span id="timerSec">0</span>s)</div>
+    <div id="loader" class="loader">🛰️ Escaneando manzana por manzana desde tu GPS hacia afuera... (<span id="timerSec">0</span>s)</div>
     <div id="results"></div>
 </div>
 
@@ -421,9 +421,41 @@
         return (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
 
-    // Enciclopedia Universal: Mapea cualquier PRODUCTO o SERVICIO hacia TODOS los giros reales donde se vende
+    // Enciclopedia de Productos -> Tiendas Reales donde SÍ venden ese producto + Marcas Exactas
     const CATALOGO_UNIVERSAL = [
-        // PLOMERÍA, BAÑOS, REGADERAS, FERRETERÍA, HERRAMIENTAS Y CONSTRUCCIÓN
+        // 1. IPHONE, CELULARES, APPLE Y TELEFONÍA (Sin papelerías ni Home Depot)
+        {
+            palabras: ["iphone", "iphones", "apple", "macbook", "ipad", "airpods", "celular", "celulares", "smartphone", "telefono", "samsung", "galaxy", "xiaomi", "motorola", "telcel", "at&t", "att", "movistar", "ishop", "macstore", "dimovil", "empretec"],
+            esMarcaExacta: false,
+            osm: [
+                "mobile_phone", "electronics", "iphone", "apple", "ishop", "macstore", "telcel", "at&t", "att",
+                "movistar", "samsung", "xiaomi", "dimovil", "empretec", "celulares", "telefonia", "movil",
+                "walmart", "liverpool", "sears", "coppel", "sanborns", "costco", "sams", "elektra", "best buy"
+            ],
+            shopOSM: "mobile_phone|electronics|telecommunication",
+            photon: ["tienda de celulares", "telcel", "ishop mixup", "macstore", "tienda de electronica", "walmart", "liverpool", "coppel"],
+            geo: "commercial.elektronics",
+            validas: [
+                "mobile_phone", "iphone", "apple", "ishop", "macstore", "telcel", "att", "at&t", "movistar",
+                "samsung", "xiaomi", "dimovil", "empretec", "celular", "telefon", "movil", "electronic",
+                "walmart", "liverpool", "sears", "coppel", "sanborns", "costco", "sams", "elektra"
+            ],
+            excluir: /office depot|home depot|papeleria|stationery|ferreteria|hardware|hotel|motel|restaurant|pizza|taco|pharmacy|hospital|bakery/i,
+            precioMin: 8999, precioMax: 34999, unidadPrecio: "Equipo nuevo / reacondicionado"
+        },
+        // 2. TIENDAS 3B / BBB (Búsqueda de marca exacta en toda la redonda)
+        {
+            palabras: ["bbb", "3b", "tiendas 3b", "tienda 3b", "tres b"],
+            esMarcaExacta: true,
+            osm: ["3b", "tiendas 3b", "tienda 3b", "bbb", "tres b"],
+            shopOSM: "",
+            photon: ["Tiendas 3B", "Tienda 3B", "3B"],
+            geo: "",
+            validas: ["3b", "bbb", "tres b"],
+            excluir: /hotel|motel|hospital|pharmacy/i,
+            precioMin: 25, precioMax: 350, unidadPrecio: "Despensa económica"
+        },
+        // 3. PLOMERÍA, BAÑOS, REGADERAS, FERRETERÍA Y HERRAMIENTAS
         {
             palabras: [
                 "regadera", "regaderas", "cebolla de regadera", "brazo de regadera", "monomando", "mezcladora",
@@ -433,24 +465,25 @@
                 "taladro", "martillo", "desarmador", "pinzas", "tornillo", "tornillos", "clavos", "cemento", "varilla",
                 "pintura", "brocha", "impermeabilizante", "cable", "foco", "focos", "apagador", "contacto", "materiales de construccion"
             ],
+            esMarcaExacta: false,
             osm: [
                 "hardware", "doityourself", "bathroom_furnishing", "trade", "building_materials", "paint", "electrical",
                 "ferreteria", "tlapaleria", "plomeria", "banos", "home depot", "sodimac", "truper", "helvex", "urrea",
                 "interceramic", "llano de la torre", "comex", "berel", "fix ferreterias", "construrama", "materiales"
             ],
-            shopOSM: "hardware|doityourself|bathroom_furnishing|trade|building_materials|paint|electrical|department_store",
+            shopOSM: "hardware|doityourself|bathroom_furnishing|trade|building_materials|paint|electrical",
             craftOSM: "plumber|electrician|carpenter|metal_construction",
-            photon: ["ferreteria", "tlapaleria", "home depot", "plomeria y banos", "materiales para construccion", "interceramic"],
-            geo: "commercial.hardware_and_tools,commercial.houseware_and_hardware,commercial.department_store",
+            photon: ["ferreteria", "tlapaleria", "home depot", "plomeria", "interceramic", "materiales de construccion"],
+            geo: "commercial.hardware_and_tools,commercial.houseware_and_hardware",
             validas: [
                 "hardware", "doityourself", "bathroom", "plomeria", "plomer", "ferreter", "tlapaler", "regadera",
                 "bano", "home depot", "sodimac", "truper", "helvex", "urrea", "interceramic", "llano de la torre",
-                "construrama", "material", "trade", "building", "department_store", "walmart", "coppel"
+                "construrama", "material", "trade", "building"
             ],
             excluir: /hotel|motel|restaurant|pizza|taco|bank|atm|pharmacy|hospital|grave_yard|cemetery/i,
             precioMin: 180, precioMax: 1650, unidadPrecio: "Por pieza / juego"
         },
-        // CERRAJERÍA Y LLAVES
+        // 4. CERRAJERÍA Y LLAVES
         {
             palabras: ["llave", "llaves", "cerrajeria", "cerrajero", "chapa", "candado", "duplicado de llaves", "cerradura"],
             osm: ["locksmith", "hardware", "cerrajeria", "cerrajero", "llaves"],
@@ -461,17 +494,17 @@
             validas: ["locksmith", "cerrajer", "llave", "hardware", "ferreter"],
             precioMin: 45, precioMax: 450, unidadPrecio: "Duplicado / servicio"
         },
-        // MUEBLES, COLCHONES Y HOGAR
+        // 5. MUEBLES Y COLCHONES
         {
             palabras: ["mueble", "muebles", "muebleria", "sofa", "sala", "comedor", "cama", "colchon", "colchones", "ropero", "closet", "escritorio", "silla", "mesa", "decoracion", "cortinas", "alfombra"],
-            osm: ["furniture", "bed", "interior_decoration", "department_store", "muebleria", "muebles", "colchones", "dico", "ikea", "dormimundo", "luuna", "liverpool", "coppel"],
-            shopOSM: "furniture|bed|interior_decoration|curtain|carpet|department_store",
+            osm: ["furniture", "bed", "interior_decoration", "muebleria", "muebles", "colchones", "dico", "ikea", "dormimundo", "luuna", "liverpool", "coppel"],
+            shopOSM: "furniture|bed|interior_decoration|curtain|carpet",
             photon: ["muebleria", "tienda de colchones", "tienda de muebles"],
-            geo: "commercial.furniture_and_interior,commercial.department_store",
-            validas: ["furniture", "bed", "muebler", "mueble", "colchon", "dico", "dormimundo", "department_store", "liverpool", "coppel"],
+            geo: "commercial.furniture_and_interior",
+            validas: ["furniture", "bed", "muebler", "mueble", "colchon", "dico", "dormimundo", "liverpool", "coppel"],
             precioMin: 950, precioMax: 6500, unidadPrecio: "Por mueble / colchón"
         },
-        // BANCOS, CAJEROS Y FINANZAS
+        // 6. BANCOS, CAJEROS Y FINANZAS
         {
             palabras: ["banco", "bancos", "cajero", "cajeros", "cajero automatico", "atm", "bbva", "banamex", "citibanamex", "santander", "banorte", "hsbc", "scotiabank", "banco azteca", "bancoppel", "inbursa", "banregio", "afirme", "caja popular", "casa de cambio", "divisas", "dolares"],
             osm: ["bank", "atm", "bureau_de_change", "bbva", "banamex", "santander", "banorte", "hsbc", "scotiabank", "azteca", "bancoppel", "inbursa", "banregio", "caja popular"],
@@ -482,7 +515,7 @@
             excluir: /hotel|motel|hostel|guest_house|restaurant|pizza|taco|pharmacy|hospital/i,
             precioMin: 0, precioMax: 45, unidadPrecio: "Comisión retiro / trámite"
         },
-        // DESPACHOS, NOTARÍAS, SEGUROS, INMOBILIARIAS
+        // 7. DESPACHOS, NOTARÍAS, SEGUROS, INMOBILIARIAS
         {
             palabras: ["abogado", "abogados", "despacho juridico", "notaria", "notario", "contador", "contadores", "contabilidad", "seguros", "aseguradora", "gnp", "axa", "qualitas", "mapfre", "inmobiliaria", "bienes raices", "agencia de viajes"],
             osm: ["lawyer", "notary", "accountant", "insurance", "estate_agent", "travel_agency", "notaria", "abogado", "contador", "seguros", "inmobiliaria", "viajes"],
@@ -493,7 +526,7 @@
             validas: ["lawyer", "notar", "account", "contador", "segur", "insur", "estate", "inmobiliar", "travel", "viaje", "office"],
             precioMin: 350, precioMax: 2500, unidadPrecio: "Asesoría / trámite"
         },
-        // HOTELES Y HOSPEDAJE
+        // 8. HOTELES Y HOSPEDAJE
         {
             palabras: ["hotel", "hoteles", "motel", "moteles", "hospedaje", "hostal", "cabana", "habitacion", "cuarto", "resort", "posada"],
             osm: ["hotel", "motel", "hostel", "guest_house", "resort", "holiday inn", "fiesta inn", "city express", "marriott", "ibis", "one", "posada"],
@@ -504,7 +537,7 @@
             excluir: /bank|atm|banco|hospital|pharmacy|supermarket/i,
             precioMin: 650, precioMax: 2600, unidadPrecio: "Por noche"
         },
-        // ENTRETENIMIENTO, CINES, MUSEOS
+        // 9. ENTRETENIMIENTO, CINES, MUSEOS
         {
             palabras: ["museo", "museos", "galeria", "teatro", "cine", "cines", "cinepolis", "cinemex", "zoologico", "acuario", "casino", "mirador", "monumento"],
             osm: ["museum", "gallery", "theatre", "cinema", "zoo", "aquarium", "theme_park", "casino", "attraction", "cinepolis", "cinemex", "museo", "teatro"],
@@ -515,7 +548,7 @@
             validas: ["museum", "museo", "gallery", "theatr", "teatro", "cinema", "cine", "zoo", "aquarium", "casino", "attraction", "entertainment"],
             precioMin: 60, precioMax: 350, unidadPrecio: "Entrada / boleto"
         },
-        // HELADOS, PALETAS, DULCES Y PANADERÍA
+        // 10. HELADOS, PALETAS, DULCES Y PANADERÍA
         {
             palabras: ["paleta", "paletas", "paleteria", "helado", "helados", "heladeria", "nieve", "nieves", "neveria", "michoacana", "raspado", "bolis"],
             osm: ["ice_cream", "paleteria", "neveria", "heladeria", "michoacana", "helados", "paletas", "nieves", "frozen_yogurt", "dairy queen", "nutrisa", "santa clara"],
@@ -546,7 +579,7 @@
             validas: ["bakery", "pastry", "panader", "pasteler", "reposter", "dona", "esperanza", "globo"],
             precioMin: 15, precioMax: 380, unidadPrecio: "Pan dulce a pastel"
         },
-        // CARNICERÍA, POLLERÍA, PESCADERÍA, FRUTERÍA, SÚPER, VINATERÍA
+        // 11. CARNICERÍA, POLLERÍA, PESCADERÍA, FRUTERÍA, SÚPER, VINATERÍA
         {
             palabras: ["carne", "carnes", "carniceria", "bistec", "arrachera", "costilla", "chuleta", "chorizo", "res", "cerdo", "pollo", "polleria", "pescado", "pescaderia", "mariscos", "cremeria", "queso", "jamon"],
             osm: ["butcher", "seafood", "dairy", "deli", "carniceria", "polleria", "pescaderia", "mariscos", "cremeria", "sukarne", "bachoco"],
@@ -568,14 +601,14 @@
         },
         {
             palabras: ["super", "supermercado", "abarrotes", "despensa", "tienda", "oxxo", "walmart", "soriana", "chedraui", "heb", "aurrera", "costco", "sams", "vinateria", "cerveza", "licor", "purificadora", "agua", "leche", "arroz", "frijol"],
-            osm: ["supermarket", "convenience", "grocery", "department_store", "alcohol", "water", "abarrotes", "oxxo", "walmart", "soriana", "chedraui", "aurrera", "costco", "sams", "asturiano", "modelorama", "purificadora"],
-            shopOSM: "supermarket|convenience|grocery|department_store|alcohol|beverages|water",
-            photon: ["supermercado", "tienda de abarrotes", "oxxo", "vinateria"],
+            osm: ["supermarket", "convenience", "grocery", "alcohol", "water", "abarrotes", "oxxo", "walmart", "soriana", "chedraui", "aurrera", "costco", "sams", "asturiano", "modelorama", "purificadora", "3b", "tiendas 3b"],
+            shopOSM: "supermarket|convenience|grocery|alcohol|beverages|water",
+            photon: ["supermercado", "tienda de abarrotes", "oxxo", "tiendas 3b", "vinateria"],
             geo: "commercial.supermarket,commercial.convenience,commercial.food_and_drink.drinks",
-            validas: ["supermarket", "convenience", "grocery", "abarrotes", "oxxo", "walmart", "soriana", "chedraui", "aurrera", "asturiano", "alcohol", "modelorama", "purificadora", "water"],
+            validas: ["supermarket", "convenience", "grocery", "abarrotes", "oxxo", "walmart", "soriana", "chedraui", "aurrera", "asturiano", "alcohol", "modelorama", "purificadora", "water", "3b"],
             precioMin: 50, precioMax: 650, unidadPrecio: "Ticket promedio"
         },
-        // RESTAURANTES Y COMIDA
+        // 12. RESTAURANTES Y COMIDA
         {
             palabras: ["hamburguesa", "hamburguesas", "burger", "burgers", "hot dog"],
             osm: ["burger", "hamburguesa", "burgers", "fast_food", "carls", "mcdonald", "burger king"],
@@ -614,26 +647,26 @@
             validas: ["cafe", "coffee", "restaurant", "fast_food", "sushi", "alita", "bar", "pub", "nightclub", "starbucks", "catering"],
             precioMin: 60, precioMax: 350, unidadPrecio: "Consumo por persona"
         },
-        // ROPA, CALZADO, JOYERÍA
+        // 13. ROPA, CALZADO, JOYERÍA
         {
             palabras: ["camisa", "camisas", "playera", "playeras", "blusa", "pantalon", "jeans", "vestido", "saco", "traje", "ropa", "boutique", "moda", "sastreria", "sueter", "chamarra", "uniforme", "merceria", "telas"],
             osm: ["clothes", "fashion", "boutique", "department_store", "tailor", "fabric", "ropa", "suburbia", "liverpool", "coppel", "zara", "bershka", "pull", "c&a", "carey", "aldo conti", "mens fashion", "h&m"],
             shopOSM: "clothes|fashion|boutique|department_store|tailor|fabric|sewing",
             photon: ["tienda de ropa", "boutique", "tienda departamental"],
-            geo: "commercial.clothing,commercial.department_store,commercial.shopping_mall",
+            geo: "commercial.clothing,commercial.department_store",
             validas: ["cloth", "fashion", "boutique", "ropa", "camisa", "department_store", "tailor", "fabric", "suburbia", "liverpool", "coppel", "zara"],
             precioMin: 220, precioMax: 890, unidadPrecio: "Por prenda"
         },
         {
             palabras: ["tacon", "tacones", "zapato", "zapatos", "zapatilla", "calzado", "zapateria", "bota", "tenis", "sandalia", "joya", "joyas", "joyeria", "reloj", "relojeria", "bolsa", "bolsas", "maleta"],
             osm: ["shoes", "jewelry", "watches", "bag", "zapateria", "calzado", "joyeria", "relojeria", "flexi", "andrea", "price shoes", "bhermanos", "nike", "adidas", "bizarro"],
-            shopOSM: "shoes|jewelry|watches|bag|leather|fashion_accessories|department_store",
+            shopOSM: "shoes|jewelry|watches|bag|leather|fashion_accessories",
             photon: ["zapateria", "joyeria", "relojeria"],
-            geo: "commercial.clothing.shoes,commercial.jewelry,commercial.bag,commercial.department_store",
+            geo: "commercial.clothing.shoes,commercial.jewelry,commercial.bag",
             validas: ["shoe", "zapater", "calzad", "jewel", "joyer", "watch", "relojer", "bag", "bolsa", "flexi", "andrea", "nike", "adidas"],
             precioMin: 390, precioMax: 1650, unidadPrecio: "Por artículo"
         },
-        // SALUD, FARMACIAS, HOSPITALES, VETERINARIAS
+        // 14. SALUD, FARMACIAS, HOSPITALES, VETERINARIAS
         {
             palabras: ["farmacia", "farmacias", "medicina", "medicamento", "pastilla", "botica"],
             osm: ["pharmacy", "chemist", "farmacia", "guadalajara", "benavides", "similares", "ahorro", "san pablo"],
@@ -655,17 +688,17 @@
             validas: ["dentist", "hospital", "clinic", "doctor", "medic", "veterinar", "optica", "laborator", "chopo", "salud digna", "healthcare", "pet"],
             precioMin: 300, precioMax: 1200, unidadPrecio: "Consulta / estudio"
         },
-        // TECNOLOGÍA, ELECTRÓNICA, PAPELERÍA Y LIBROS
+        // 15. PAPELERÍA, LIBROS Y CÓMPUTO
         {
-            palabras: ["celular", "celulares", "telefono", "iphone", "samsung", "cargador", "audifonos", "computadora", "laptop", "impresora", "electronica", "papeleria", "copias", "libro", "libros", "libreria", "fotografia"],
-            osm: ["mobile_phone", "electronics", "computer", "stationery", "copyshop", "books", "photo", "celulares", "telcel", "papeleria", "libreria", "office depot", "gandhi", "steren"],
-            shopOSM: "mobile_phone|electronics|computer|stationery|copyshop|books|photo|hifi|department_store",
-            photon: ["tienda de celulares", "papeleria", "libreria", "electronica"],
+            palabras: ["computadora", "laptop", "impresora", "electronica", "papeleria", "copias", "libro", "libros", "libreria", "fotografia"],
+            osm: ["electronics", "computer", "stationery", "copyshop", "books", "photo", "papeleria", "libreria", "office depot", "gandhi", "steren"],
+            shopOSM: "electronics|computer|stationery|copyshop|books|photo|hifi",
+            photon: ["papeleria", "libreria", "electronica", "computadoras"],
             geo: "commercial.elektronics,commercial.stationery,commercial.books",
-            validas: ["mobile", "phone", "celular", "electronic", "computer", "stationery", "copyshop", "papeler", "book", "librer", "telcel", "steren", "photo", "department_store"],
+            validas: ["electronic", "computer", "stationery", "copyshop", "papeler", "book", "librer", "steren", "photo", "office depot"],
             precioMin: 50, precioMax: 2500, unidadPrecio: "Por artículo"
         },
-        // AUTOMOTRIZ Y TRANSPORTE
+        // 16. AUTOMOTRIZ Y TRANSPORTE
         {
             palabras: ["taller", "talleres", "mecanico", "llanta", "llantas", "llantera", "refaccion", "refacciones", "refaccionaria", "bujia", "bujias", "bateria", "aceite", "gasolina", "gasolinera", "autolavado", "agencia de autos", "motos", "estacionamiento", "central de autobuses", "aeropuerto", "metro", "tren"],
             osm: ["car_repair", "tyres", "car_parts", "car", "motorcycle", "fuel", "charging_station", "car_wash", "parking", "bus_station", "aerodrome", "station", "taller", "llantera", "refaccionaria", "autozone", "pemex", "autolavado"],
@@ -678,7 +711,7 @@
             validas: ["car_repair", "tyre", "car_part", "car", "motorcycle", "fuel", "car_wash", "taller", "llanter", "refaccion", "autozone", "pemex", "vehicle", "parking", "bus", "aero", "station"],
             precioMin: 250, precioMax: 1900, unidadPrecio: "Servicio / refacción"
         },
-        // SERVICIOS PERSONALES, DEPORTE, EDUCACIÓN Y GOBIERNO
+        // 17. SERVICIOS PERSONALES, DEPORTE, EDUCACIÓN Y GOBIERNO
         {
             palabras: ["lavanderia", "tintoreria", "estetica", "barberia", "peluqueria", "spa", "gimnasio", "gym", "cancha", "alberca", "flor", "flores", "floreria", "vivero", "juguete", "juguetes", "bicicleta", "paqueteria", "correo", "funeraria", "escuela", "escuelas", "colegio", "universidad", "guarderia", "biblioteca", "parque", "iglesia", "templo", "gobierno", "policia", "bomberos"],
             osm: ["laundry", "dry_cleaning", "hairdresser", "beauty", "barber", "fitness_centre", "sports_centre", "florist", "garden_centre", "toys", "bicycle", "post_office", "funeral_directors", "school", "college", "university", "kindergarten", "library", "park", "place_of_worship", "townhall", "police", "fire_station"],
@@ -713,10 +746,11 @@
         let precioMin = 90;
         let precioMax = 350;
         let unidadPrecio = "Estimado por servicio / producto";
+        let esMarcaExacta = false;
 
         palabras.forEach(p => {
             const limpia = p.replace(/[^a-z0-9]/g, "");
-            if (limpia.length > 2) {
+            if (limpia.length > 1) {
                 palabrasClaveValidadas.add(limpia);
                 if (limpia.endsWith("es") && limpia.length > 5) palabrasClaveValidadas.add(limpia.slice(0, -2));
                 else if (limpia.endsWith("s") && limpia.length > 4) palabrasClaveValidadas.add(limpia.slice(0, -1));
@@ -731,6 +765,7 @@
             });
             if (match) {
                 huboCoincidencia = true;
+                if (entrada.esMarcaExacta) esMarcaExacta = true;
                 entrada.osm.forEach(t => setOSM.add(t));
                 entrada.photon.forEach(t => terminosPhoton.add(t));
                 if (entrada.shopOSM) filtroShopOSM = filtroShopOSM ? `${filtroShopOSM}|${entrada.shopOSM}` : entrada.shopOSM;
@@ -752,12 +787,14 @@
         });
 
         if (!huboCoincidencia) {
+            esMarcaExacta = true;
             palabrasClaveValidadas.forEach(raiz => setOSM.add(raiz));
         }
 
         return {
             qNorm,
             queryOriginal: queryRaw.trim(),
+            esMarcaExacta,
             regexOSM: Array.from(setOSM).join("|") || qNorm.replace(/[^a-z0-9]/g, ""),
             filtroShopOSM,
             filtroAmenityOSM,
@@ -796,7 +833,7 @@
         let comentario = "Local comercial verificado en mapa";
         if (rating < 3.6) comentario = "Reseñas mixtas: reportan tiempos de espera en horas pico";
         else if (rating < 4.3) comentario = "Buena calificación general por ubicación y surtido";
-        else comentario = "Excelentes opiniones y surtido comprobado en la zona";
+        else comentario = "Excelentes opiniones y disponibilidad comprobada en la zona";
 
         return {
             rating,
@@ -841,11 +878,9 @@
 
     async function consultarAnilloOverpass(lat, lon, radioMetros, intencion, limite) {
         let bloques = `
-            nwr["name"~"${intencion.regexOSM}",i]["shop"](around:${radioMetros},${lat},${lon});
-            nwr["name"~"${intencion.regexOSM}",i]["amenity"](around:${radioMetros},${lat},${lon});
-            nwr["name"~"${intencion.regexOSM}",i]["craft"](around:${radioMetros},${lat},${lon});
-            nwr["name"~"${intencion.regexOSM}",i]["office"](around:${radioMetros},${lat},${lon});
+            nwr["name"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
             nwr["brand"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
+            nwr["operator"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
             nwr["description"~"${intencion.regexOSM}",i](around:${radioMetros},${lat},${lon});
         `;
         if (intencion.filtroShopOSM) bloques += `nwr["shop"~"${intencion.filtroShopOSM}",i](around:${radioMetros},${lat},${lon});`;
@@ -877,7 +912,7 @@
     function ordenarPorCercaniaResenasYPrecio(lista) {
         return lista.sort((a, b) => {
             const diffDist = a.distancia - b.distancia;
-            if (Math.abs(diffDist) > 0.35) return diffDist;
+            if (Math.abs(diffDist) > 0.25) return diffDist;
             const diffRating = b.rating - a.rating;
             if (Math.abs(diffRating) > 0.15) return diffRating;
             return a.precioMedio - b.precioMedio;
@@ -889,7 +924,6 @@
         const extraNorm = normalizarTexto(item.etiquetasExtra || "");
         const nombreNorm = normalizarTexto(item.nombre || "");
 
-        // Bloquea cualquier calle, avenida, privada, camino, colonia, municipio o división geográfica
         const regexNoLocal = /highway|street|road|avenue|boulevard|residential|pedestrian|footway|path|track|cycleway|service|unclassified|tertiary|secondary|primary|motorway|trunk|living_street|place|city|town|village|hamlet|suburb|neighbourhood|quarter|locality|municipality|county|state|region|country|boundary|administrative|landuse|natural|waterway/;
         if (regexNoLocal.test(giroNorm) || regexNoLocal.test(extraNorm)) {
             return true;
@@ -906,8 +940,6 @@
 
         const agregar = (item, vieneDeCategoriaExacta = false) => {
             if (!item.nombre || !item.lat || !item.lon) return;
-
-            // Filtro estricto: jamás permite calles, avenidas, colonias ni lugares geográficos
             if (esCalleOLugarNoComercial(item)) return;
 
             const textoCompleto = normalizarTexto(`${item.nombre} ${item.giro || ""} ${item.etiquetasExtra || ""}`);
@@ -941,10 +973,8 @@
             elementos.forEach(el => {
                 if (el.tags && (el.tags.name || el.tags.brand || el.tags.operator)) {
                     const t = el.tags;
-                    // Rechaza explícitamente cualquier vía pública (highway) o límite administrativo
                     if (t.highway || t.boundary || t.place || t.landuse) return;
 
-                    // Exige que sea un local, comercio, oficina, taller, centro de salud, educativo o servicio real
                     const tieneGiroReal = t.shop || t.amenity || t.craft || t.office || t.tourism || t.leisure || t.healthcare || t.aeroway || t.railway || t.brand;
                     if (!tieneGiroReal) return;
 
@@ -959,7 +989,7 @@
                         agregar({
                             nombre,
                             giro,
-                            etiquetasExtra: `${t.description || ""} ${t.brand || ""} ${t.cuisine || ""} ${t.shop || ""} ${t.amenity || ""} ${t.office || ""} ${t.craft || ""} ${t.leisure || ""} ${t.tourism || ""} ${t.healthcare || ""}`,
+                            etiquetasExtra: `${t.description || ""} ${t.brand || ""} ${t.operator || ""} ${t.cuisine || ""} ${t.shop || ""} ${t.amenity || ""} ${t.office || ""} ${t.craft || ""} ${t.leisure || ""} ${t.tourism || ""} ${t.healthcare || ""}`,
                             calle: calleNum || "Calle no especificada",
                             codigoPostal: t["addr:postcode"] || "No registrado",
                             ciudad: t["addr:city"] || t["addr:town"] || t["addr:suburb"] || ciudadUsuarioActual || "Local",
@@ -968,19 +998,22 @@
                             direccionCompleta: dirFull || "Ubicación registrada en mapa",
                             lat: tLat,
                             lon: tLon
-                        }, true);
+                        }, false);
                     }
                 }
             });
         };
 
-        // 1. Overpass Anillo 1 (0 a 6 km - tu ciudad) y Anillo 2 (0 a 45 km - todo tu estado)
-        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 6000, intencion, 300).then(procesarElementosOSM);
-        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 45000, intencion, 300).then(procesarElementosOSM);
+        // Anillo 0: 0 a 2 km (enfrente de tu casa / tu colonia)
+        // Anillo 1: 0 a 8 km (tu municipio)
+        // Anillo 2: 0 a 35 km (tu estado)
+        const pAnillo0 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 2000, intencion, 250).then(procesarElementosOSM);
+        const pAnillo1 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 8000, intencion, 250).then(procesarElementosOSM);
+        const pAnillo2 = consultarAnilloOverpass(centroBusquedaLat, centroBusquedaLon, 35000, intencion, 250).then(procesarElementosOSM);
 
-        // 2. Geoapify Places API v2 (100 locales reales en un radio de 45 km dentro de tu estado)
+        // Geoapify Places API v2 (100 locales reales en un radio de 35 km dentro de tu estado)
         const pGeoapifyPlaces = intencion.categoriaGeoapify
-            ? fetchRapido(`https://api.geoapify.com/v2/places?categories=${encodeURIComponent(intencion.categoriaGeoapify)}&filter=circle:${centroBusquedaLon},${centroBusquedaLat},45000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=100&apiKey=${GEOAPIFY_API_KEY}`, {}, 6000)
+            ? fetchRapido(`https://api.geoapify.com/v2/places?categories=${encodeURIComponent(intencion.categoriaGeoapify)}&filter=circle:${centroBusquedaLon},${centroBusquedaLat},35000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=100&apiKey=${GEOAPIFY_API_KEY}`, {}, 6000)
                 .then(r => r.json())
                 .then(data => {
                     (data.features || []).forEach(f => {
@@ -999,40 +1032,42 @@
                                 direccionCompleta: p.formatted || "Ubicación verificada",
                                 lat: p.lat,
                                 lon: p.lon
-                            }, true);
+                            }, !intencion.esMarcaExacta);
                         }
                     });
                 }).catch(() => {})
             : Promise.resolve();
 
-        // 3. Geoapify Text Search filtrado exclusivamente a comercios/amenidades (excluye calles)
-        const pGeoapifyText = fetchRapido(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(intencion.queryOriginal)}&type=amenity&filter=circle:${centroBusquedaLon},${centroBusquedaLat},45000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=50&apiKey=${GEOAPIFY_API_KEY}`, {}, 5500)
-            .then(r => r.json())
-            .then(data => {
-                (data.features || []).forEach(f => {
-                    const p = f.properties || {};
-                    if (p.name && p.lat && p.lon) {
-                        const calleNum = [p.street, p.housenumber].filter(Boolean).join(" #");
-                        agregar({
-                            nombre: p.name,
-                            giro: p.category || "Establecimiento",
-                            etiquetasExtra: p.category || "",
-                            calle: calleNum || p.address_line1 || "Calle no especificada",
-                            codigoPostal: p.postcode || "No registrado",
-                            ciudad: p.city || p.town || p.suburb || ciudadUsuarioActual || "Local",
-                            estado: p.state || estadoUsuarioActual || "No especificado",
-                            pais: p.country || "México",
-                            direccionCompleta: p.formatted || "Ubicación verificada",
-                            lat: p.lat,
-                            lon: p.lon
-                        }, false);
-                    }
-                });
-            }).catch(() => {});
+        // Geoapify Text Search filtrado a amenidades/locales dentro de 35 km
+        const pGeoapifyText = Promise.allSettled(intencion.listaPhoton.slice(0, 3).map(termino =>
+            fetchRapido(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(termino)}&type=amenity&filter=circle:${centroBusquedaLon},${centroBusquedaLat},35000&bias=proximity:${centroBusquedaLon},${centroBusquedaLat}&limit=40&apiKey=${GEOAPIFY_API_KEY}`, {}, 5500)
+                .then(r => r.json())
+                .then(data => {
+                    (data.features || []).forEach(f => {
+                        const p = f.properties || {};
+                        if (p.name && p.lat && p.lon) {
+                            const calleNum = [p.street, p.housenumber].filter(Boolean).join(" #");
+                            agregar({
+                                nombre: p.name,
+                                giro: p.category || "Establecimiento",
+                                etiquetasExtra: p.category || "",
+                                calle: calleNum || p.address_line1 || "Calle no especificada",
+                                codigoPostal: p.postcode || "No registrado",
+                                ciudad: p.city || p.town || p.suburb || ciudadUsuarioActual || "Local",
+                                estado: p.state || estadoUsuarioActual || "No especificado",
+                                pais: p.country || "México",
+                                direccionCompleta: p.formatted || "Ubicación verificada",
+                                lat: p.lat,
+                                lon: p.lon
+                            }, false);
+                        }
+                    });
+                }).catch(() => {})
+        ));
 
-        // 4. Photon Local con sinónimos de giros comerciales donde venden el producto (ej. ferreteria, home depot, plomeria)
+        // Photon Local con sinónimos exactos
         const pPhotonLocal = Promise.allSettled(intencion.listaPhoton.map(termino =>
-            fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(termino)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=30`, {}, 5000)
+            fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(termino)}&lat=${centroBusquedaLat}&lon=${centroBusquedaLon}&limit=35`, {}, 5000)
                 .then(r => r.json())
                 .then(data => {
                     (data.features || []).forEach(f => {
@@ -1059,34 +1094,36 @@
                 }).catch(() => {})
         ));
 
-        // 5. Nominatim Cercano (dentro de un cuadro de ~50 km en tu estado)
-        const delta = 0.45;
+        // Nominatim Cercano dentro de tu estado (cuadro de ~40 km)
+        const delta = 0.36;
         const viewbox = `${centroBusquedaLon - delta},${centroBusquedaLat + delta},${centroBusquedaLon + delta},${centroBusquedaLat - delta}`;
-        const pNominatimCerca = fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(intencion.listaPhoton[0])}&viewbox=${viewbox}&bounded=1&limit=35&addressdetails=1`, {}, 5000)
-            .then(r => r.json())
-            .then(data => {
-                (data || []).forEach(item => {
-                    if (item.name && item.class !== "highway" && item.class !== "place" && item.class !== "boundary") {
-                        const addr = item.address || {};
-                        const calleNum = [addr.road, addr.house_number].filter(Boolean).join(" #");
-                        agregar({
-                            nombre: item.name,
-                            giro: item.type || "Establecimiento",
-                            etiquetasExtra: `${item.class || ""} ${item.type || ""}`,
-                            calle: calleNum || "Calle no especificada",
-                            codigoPostal: addr.postcode || "No registrado",
-                            ciudad: addr.city || addr.town || addr.suburb || ciudadUsuarioActual || "Local",
-                            estado: addr.state || estadoUsuarioActual || "No especificado",
-                            pais: addr.country || "México",
-                            direccionCompleta: item.display_name || "Ubicación local",
-                            lat: parseFloat(item.lat),
-                            lon: parseFloat(item.lon)
-                        }, false);
-                    }
-                });
-            }).catch(() => {});
+        const pNominatimCerca = Promise.allSettled(intencion.listaPhoton.slice(0, 3).map(termino =>
+            fetchRapido(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(termino)}&viewbox=${viewbox}&bounded=1&limit=35&addressdetails=1`, {}, 5000)
+                .then(r => r.json())
+                .then(data => {
+                    (data || []).forEach(item => {
+                        if (item.name && item.class !== "highway" && item.class !== "place" && item.class !== "boundary") {
+                            const addr = item.address || {};
+                            const calleNum = [addr.road, addr.house_number].filter(Boolean).join(" #");
+                            agregar({
+                                nombre: item.name,
+                                giro: item.type || "Establecimiento",
+                                etiquetasExtra: `${item.class || ""} ${item.type || ""}`,
+                                calle: calleNum || "Calle no especificada",
+                                codigoPostal: addr.postcode || "No registrado",
+                                ciudad: addr.city || addr.town || addr.suburb || ciudadUsuarioActual || "Local",
+                                estado: addr.state || estadoUsuarioActual || "No especificado",
+                                pais: addr.country || "México",
+                                direccionCompleta: item.display_name || "Ubicación local",
+                                lat: parseFloat(item.lat),
+                                lon: parseFloat(item.lon)
+                            }, false);
+                        }
+                    });
+                }).catch(() => {})
+        ));
 
-        // 6. Cobertura Mundial (solo si el usuario elige "cerca_y_mundo" o si no hubo nada en su estado)
+        // Cobertura Mundial solo si el usuario selecciona "cerca_y_mundo"
         const pMundial = (modoAlcance === "cerca_y_mundo")
             ? fetchRapido(`https://photon.komoot.io/api/?q=${encodeURIComponent(intencion.listaPhoton[0])}&limit=20`, {}, 5000)
                 .then(r => r.json())
@@ -1115,7 +1152,7 @@
                 }).catch(() => {})
             : Promise.resolve();
 
-        await Promise.allSettled([pAnillo1, pAnillo2, pGeoapifyPlaces, pGeoapifyText, pPhotonLocal, pNominatimCerca, pMundial]);
+        await Promise.allSettled([pAnillo0, pAnillo1, pAnillo2, pGeoapifyPlaces, pGeoapifyText, pPhotonLocal, pNominatimCerca, pMundial]);
 
         const lista = Array.from(unicos.values()).sort((a, b) => a.distanciaRecta - b.distanciaRecta);
         await calcularRutasRealesPorCalle(origenLat, origenLon, lista);
@@ -1162,8 +1199,8 @@
         if (tiendas.length === 0) {
             container.innerHTML = `
                 <div class="card">
-                    <div style="font-weight:700; margin-bottom:6px;">No aparecieron locales registrados para "${query}" en esta zona</div>
-                    <div class="meta">Prueba cambiando el selector superior a "🌍 Mi estado primero → luego todo el mundo" o mueve el mapa y toca "🌍 Buscar en esta zona".</div>
+                    <div style="font-weight:700; margin-bottom:6px;">No aparecieron locales registrados para "${query}" en tu zona</div>
+                    <div class="meta">Prueba escribiendo el nombre completo de la cadena (ej. "Tiendas 3B") o mueve el mapa y toca "🌍 Buscar en esta zona".</div>
                 </div>`;
             return;
         }
@@ -1197,7 +1234,7 @@
                 </div>
             </div>
             <div class="section-divider">
-                <span>🏪 ${tiendas.length} LOCALES REALES (SIN CALLES) PARA "${query.toUpperCase()}" — 1° CERCANÍA • 2° RESEÑAS • 3° PRECIO</span>
+                <span>🏪 ${tiendas.length} LOCALES REALES EN TU ZONA Y ESTADO PARA "${query.toUpperCase()}" — 1° CERCANÍA • 2° RESEÑAS • 3° PRECIO</span>
             </div>
         `;
 
